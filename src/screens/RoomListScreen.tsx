@@ -38,12 +38,12 @@ export const RoomListScreen: React.FC = () => {
   const lowestPrice =
     allListings.length > 0 ? Math.min(...allListings.map((l) => l.price)) : product.mrp;
 
-  const handleRequestClick = (sellerRoom: string, sellerName: string) => {
+  const handleRequestClick = (listingId: string) => {
     if (navigator.vibrate) {
       navigator.vibrate(50);
     }
-    setRequestToast(`Request sent to ${sellerName} (Room ${sellerRoom})!`);
-    setTimeout(() => setRequestToast(null), 3000);
+    const method = deliveryFilter === 'delivery' ? 'delivery' : 'pickup';
+    navigate(`/request-confirm/${listingId}?method=${method}`);
   };
 
   return (
@@ -178,7 +178,7 @@ export const RoomListScreen: React.FC = () => {
                   {/* Action Button */}
                   <button
                     type="button"
-                    onClick={() => handleRequestClick(listing.sellerRoom, listing.sellerName)}
+                    onClick={() => handleRequestClick(listing.id)}
                     className="mt-1 w-full py-3.5 rounded-full font-bold text-sm uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-transform cursor-pointer hover:brightness-110"
                   >
                     Request

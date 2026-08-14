@@ -1,11 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider, useUser } from './context/UserContext';
+import { RequestProvider } from './context/RequestContext';
 import { SplashScreen } from './screens/SplashScreen';
 import { VerificationGateScreen } from './screens/VerificationGateScreen';
 import { HostelSetupScreen } from './screens/HostelSetupScreen';
 import { CatalogScreen } from './screens/CatalogScreen';
 import { RoomListScreen } from './screens/RoomListScreen';
+import { RequestConfirmationScreen } from './screens/RequestConfirmationScreen';
+import { RequestsScreen } from './screens/RequestsScreen';
 
 // Protected Route Guard for Setup
 const RequireVerification: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -57,19 +60,35 @@ const AppRoutes: React.FC = () => {
           </RequireSetupComplete>
         }
       />
+      <Route
+        path="/request-confirm/:listingId"
+        element={
+          <RequireSetupComplete>
+            <RequestConfirmationScreen />
+          </RequireSetupComplete>
+        }
+      />
+      <Route
+        path="/requests"
+        element={
+          <RequireSetupComplete>
+            <RequestsScreen />
+          </RequireSetupComplete>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
 
-export const App: React.FC = () => {
+export default function App() {
   return (
     <UserProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <RequestProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </RequestProvider>
     </UserProvider>
   );
-};
-
-export default App;
+}

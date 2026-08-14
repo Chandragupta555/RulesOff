@@ -168,6 +168,18 @@ export const getFloorProximityLabel = getProximityLabel;
 // Room numbers now use PEC format: [Block][Floor][Room]
 // User is in A304, so we spread listings across blocks A, B, C and multiple floors.
 export const MOCK_LISTINGS: Listing[] = [
+  // ── User's Own Listing (Room A304) ──
+  {
+    id: 'list-m-user',
+    productId: 'maggi',
+    hostel: 'Shivalik',
+    sellerRoom: 'A304',
+    sellerName: 'Rohit Sharma',
+    quantity: 5,
+    price: 12,
+    isSellerAwake: true,
+    deliveryOptIn: true,
+  },
   // ── Maggi Listings (Total awake: 14 units across 6 rooms in Shivalik) ──
   {
     id: 'list-m1',
@@ -395,3 +407,27 @@ export const getProductAggregates = (userHostel: string): ProductAggregate[] => 
     };
   });
 };
+
+// ─── Weekly Sales Tracking ───────────────────────────────────────────
+export interface WeeklySales {
+  [productId: string]: number;
+}
+
+export const MOCK_WEEKLY_SALES: WeeklySales = {
+  maggi: 12,
+  'lays-chips': 8,
+  kurkure: 5,
+  'coca-cola': 3,
+  oats: 0,
+};
+
+export const decrementListingQuantity = (listingId: string, qty: number): boolean => {
+  const listing = MOCK_LISTINGS.find((l) => l.id === listingId);
+  if (listing) {
+    listing.quantity = Math.max(0, listing.quantity - qty);
+    MOCK_WEEKLY_SALES[listing.productId] = (MOCK_WEEKLY_SALES[listing.productId] || 0) + qty;
+    return true;
+  }
+  return false;
+};
+
