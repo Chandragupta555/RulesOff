@@ -1,0 +1,279 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>RulesOff - Room List</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#832700",
+                        "on-surface-variant": "#e3bfb3",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#2f3131",
+                        "on-surface": "#e2e2e2",
+                        "on-tertiary": "#313030",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "secondary-fixed": "#e5e2e1",
+                        "tertiary-container": "#959393",
+                        "surface-bright": "#38393a",
+                        "on-secondary": "#313030",
+                        "tertiary-fixed": "#e5e2e1",
+                        "primary-fixed": "#ffdbcf",
+                        "outline-variant": "#5b4138",
+                        "on-background": "#e2e2e2",
+                        "surface-container-high": "#282a2b",
+                        "secondary": "#c8c6c5",
+                        "error": "#ffb4ab",
+                        "surface-variant": "#333535",
+                        "surface-dim": "#121414",
+                        "inverse-primary": "#ab3600",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-secondary-container": "#bab8b7",
+                        "surface-container": "#1e2020",
+                        "primary-fixed-dim": "#ffb59c",
+                        "secondary-container": "#4a4949",
+                        "surface-container-highest": "#333535",
+                        "surface-container-low": "#1a1c1c",
+                        "surface-container-lowest": "#0d0e0f",
+                        "outline": "#aa897f",
+                        "on-tertiary-container": "#2d2c2c",
+                        "tertiary": "#c9c6c5",
+                        "on-primary": "#5c1900",
+                        "surface": "#121414",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "inverse-surface": "#e2e2e2",
+                        "on-primary-container": "#561700",
+                        "on-secondary-fixed-variant": "#474646",
+                        "primary": "#ffb59c",
+                        "background": "#121414",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "surface-tint": "#ffb59c",
+                        "tertiary-fixed-dim": "#c9c6c5",
+                        "primary-container": "#ff5f1f",
+                        "on-primary-fixed": "#390c00",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "base": "8px",
+                        "container-padding": "20px",
+                        "element-gap": "16px",
+                        "safe-bottom": "34px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Lexend"],
+                        "headline-lg": ["Lexend"],
+                        "headline-xl": ["Lexend"],
+                        "body-lg": ["Lexend"],
+                        "headline-md": ["Lexend"],
+                        "label-lg": ["Lexend"],
+                        "label-sm": ["Lexend"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "38px", "letterSpacing": "0.01em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "letterSpacing": "0.01em", "fontWeight": "700"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "0.02em", "fontWeight": "800"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "30px", "fontWeight": "700"}],
+                        "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #121414; /* surface-dim / background fallback */
+            color: #e2e2e2; /* on-surface */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .neon-glow {
+            box-shadow: 0px 4px 20px rgba(255, 95, 31, 0.3);
+        }
+        
+        .neon-border {
+            box-shadow: inset 0 0 0 1px rgba(255, 95, 31, 0.5);
+        }
+
+        .neon-text-glow {
+            text-shadow: 0 0 10px rgba(255, 95, 31, 0.5);
+        }
+        
+        .card-bg {
+            background-color: #121212;
+            border: 1px solid #1F1F1F;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen w-full flex justify-center overflow-x-hidden">
+<!-- Mobile Container Wrapper for 390x844 preview -->
+<div class="relative w-full max-w-[390px] h-[844px] bg-background shadow-2xl overflow-y-auto overflow-x-hidden border-x border-outline-variant/10">
+<!-- TopAppBar (Based on Shared Components JSON) -->
+<header class="sticky top-0 z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 flex justify-between items-center w-full px-container-padding h-16">
+<button class="text-on-surface-variant hover:opacity-80 active:scale-95 transition-transform duration-150 flex items-center justify-center w-10 h-10 rounded-full bg-surface-container-high">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h1 class="font-headline-md text-headline-md-mobile text-primary tracking-tighter italic">MAGGI</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">14 units across 6 rooms</p>
+</div>
+<button class="text-on-surface-variant hover:opacity-80 active:scale-95 transition-transform duration-150 flex items-center justify-center w-10 h-10">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="w-full px-container-padding pt-element-gap pb-[120px] flex flex-col gap-element-gap">
+<!-- Delivery/Pickup Toggles -->
+<div class="flex bg-surface-container-high rounded-full p-1 border border-outline-variant/20 mb-2">
+<button class="flex-1 py-3 rounded-full font-label-lg text-label-lg text-on-primary bg-primary-container neon-glow active:scale-95 transition-all duration-150">
+                    Pickup
+                </button>
+<button class="flex-1 py-3 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-primary transition-all duration-150">
+                    Delivery
+                </button>
+</div>
+<!-- List of Room Cards -->
+<div class="flex flex-col gap-base">
+<!-- Card 1 -->
+<div class="card-bg rounded-[24px] p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary-container/30 transition-colors duration-300">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-headline-md text-headline-md-mobile text-on-surface mb-1">Room 402</h2>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1 font-label-sm text-label-sm text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse"></span> Awake now
+                                </span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md-mobile text-primary">3 <span class="font-label-sm text-label-sm text-on-surface-variant">units</span></span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/20">Same floor</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/20">₹12</span>
+</div>
+<button class="mt-2 w-full py-4 rounded-full font-headline-md text-[16px] uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-transform duration-150 haptic-target">
+                        Request
+                    </button>
+</div>
+<!-- Card 2 -->
+<div class="card-bg rounded-[24px] p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary-container/30 transition-colors duration-300">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-headline-md text-headline-md-mobile text-on-surface mb-1">Room 301</h2>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1 font-label-sm text-label-sm text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse"></span> Awake now
+                                </span>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="font-headline-md text-headline-md-mobile text-primary">4 <span class="font-label-sm text-label-sm text-on-surface-variant">units</span></span>
+<span class="font-label-sm text-[10px] text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full mt-1 border border-primary/20">1 pending</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/20">1 floor away</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/20">₹10</span><span class="font-label-sm text-label-sm text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 rounded-full border border-[#4ade80]/20">Best Price</span>
+</div>
+<button class="mt-2 w-full py-4 rounded-full font-headline-md text-[16px] uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-transform duration-150 haptic-target">
+                        Request
+                    </button>
+</div>
+<!-- Card 3 -->
+<div class="card-bg rounded-[24px] p-4 flex flex-col gap-3 relative overflow-hidden group hover:border-primary-container/30 transition-colors duration-300">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-headline-md text-headline-md-mobile text-on-surface mb-1">Room 512</h2>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1 font-label-sm text-label-sm text-[#4ade80] bg-[#4ade80]/10 px-2 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse"></span> Awake now
+                                </span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md-mobile text-primary">2 <span class="font-label-sm text-label-sm text-on-surface-variant">units</span></span>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/20">2 floors away</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full border border-outline-variant/20">₹12</span>
+</div>
+<button class="mt-2 w-full py-4 rounded-full font-headline-md text-[16px] uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-transform duration-150 haptic-target">
+                        Request
+                    </button>
+</div>
+</div>
+<!-- Empty State (Hidden, but present as requested) -->
+<div class="hidden flex-col items-center justify-center text-center mt-12 px-6">
+<span class="text-4xl mb-4">😴</span>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Everyone's asleep on this one — try again later or suggest restocking.</p>
+<button class="w-full py-3 rounded-full font-label-lg text-label-lg text-primary bg-transparent border-2 border-primary-container hover:bg-primary-container/10 active:scale-95 transition-all duration-150">
+                    Suggest Restock
+                </button>
+</div>
+</main>
+<!-- BottomNavBar (Based on Shared Components JSON) -->
+<!-- Note: Nav is shown here as Shelf is active contextually, though we are in a sub-view -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pt-2 pb-safe-bottom h-20 bg-surface-container-lowest backdrop-blur-2xl shadow-[0px_-4px_20px_rgba(255,95,31,0.15)] md:hidden rounded-t-lg max-w-[390px] mx-auto">
+<!-- Shelf (Active) -->
+<button class="flex flex-col items-center justify-center text-primary font-bold bg-primary-container/10 rounded-xl px-3 py-1 transition-all duration-300 ease-out active:scale-90">
+<span class="material-symbols-outlined" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-label-sm text-label-sm mt-1">Shelf</span>
+</button>
+<!-- Requests -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary/80 transition-all duration-300 ease-out active:scale-90">
+<span class="material-symbols-outlined" data-icon="reorder">reorder</span>
+<span class="font-label-sm text-label-sm mt-1">Requests</span>
+</button>
+<!-- Rank -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary/80 transition-all duration-300 ease-out active:scale-90">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-sm text-label-sm mt-1">Rank</span>
+</button>
+<!-- Profile -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary/80 transition-all duration-300 ease-out active:scale-90">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm mt-1">Profile</span>
+</button>
+</nav>
+</div>
+<script>
+        // Simple haptic feedback simulation for buttons
+        document.querySelectorAll('.haptic-target').forEach(button => {
+            button.addEventListener('click', () => {
+                if (navigator.vibrate) {
+                    navigator.vibrate(50); // Medium tap
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

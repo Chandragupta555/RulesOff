@@ -4,7 +4,8 @@ import { UserProvider, useUser } from './context/UserContext';
 import { SplashScreen } from './screens/SplashScreen';
 import { VerificationGateScreen } from './screens/VerificationGateScreen';
 import { HostelSetupScreen } from './screens/HostelSetupScreen';
-import { CatalogPlaceholderScreen } from './screens/CatalogPlaceholderScreen';
+import { CatalogScreen } from './screens/CatalogScreen';
+import { RoomListScreen } from './screens/RoomListScreen';
 
 // Protected Route Guard for Setup
 const RequireVerification: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -44,7 +45,15 @@ const AppRoutes: React.FC = () => {
         path="/catalog"
         element={
           <RequireSetupComplete>
-            <CatalogPlaceholderScreen />
+            <CatalogScreen />
+          </RequireSetupComplete>
+        }
+      />
+      <Route
+        path="/catalog/:productId"
+        element={
+          <RequireSetupComplete>
+            <RoomListScreen />
           </RequireSetupComplete>
         }
       />

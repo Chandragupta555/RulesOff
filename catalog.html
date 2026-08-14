@@ -1,0 +1,307 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>RulesOff - Tonight's Shelf</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#bab8b7",
+                        "surface-container-highest": "#333535",
+                        "tertiary": "#c9c6c5",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-surface-variant": "#e3bfb3",
+                        "inverse-surface": "#e2e2e2",
+                        "secondary-container": "#4a4949",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c9c6c5",
+                        "on-tertiary-container": "#2d2c2c",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-bright": "#38393a",
+                        "surface-tint": "#ffb59c",
+                        "inverse-primary": "#ab3600",
+                        "on-primary-fixed": "#390c00",
+                        "on-secondary": "#313030",
+                        "on-background": "#e2e2e2",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-primary-fixed-variant": "#832700",
+                        "outline": "#aa897f",
+                        "on-primary-container": "#561700",
+                        "surface-dim": "#121414",
+                        "on-tertiary": "#313030",
+                        "surface-container": "#1e2020",
+                        "tertiary-container": "#959393",
+                        "background": "#121414",
+                        "secondary-fixed": "#e5e2e1",
+                        "on-surface": "#e2e2e2",
+                        "surface-variant": "#333535",
+                        "on-tertiary-fixed-variant": "#474646",
+                        "primary-fixed-dim": "#ffb59c",
+                        "primary-fixed": "#ffdbcf",
+                        "primary-container": "#ff5f1f",
+                        "on-primary": "#5c1900",
+                        "outline-variant": "#5b4138",
+                        "surface-container-low": "#1a1c1c",
+                        "surface-container-high": "#282a2b",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "inverse-on-surface": "#2f3131",
+                        "primary": "#ffb59c",
+                        "secondary": "#c8c6c5",
+                        "surface": "#121414",
+                        "on-secondary-fixed-variant": "#474646",
+                        "on-error-container": "#ffdad6"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "8px",
+                        "element-gap": "16px",
+                        "container-padding": "20px",
+                        "section-gap": "32px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Lexend"],
+                        "body-md": ["Lexend"],
+                        "label-sm": ["Lexend"],
+                        "body-lg": ["Lexend"],
+                        "headline-xl": ["Lexend"],
+                        "label-lg": ["Lexend"],
+                        "headline-md": ["Lexend"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["32px", { lineHeight: "38px", letterSpacing: "0.01em", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "headline-xl": ["40px", { lineHeight: "48px", letterSpacing: "0.02em", fontWeight: "800" }],
+                        "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-md": ["24px", { lineHeight: "30px", fontWeight: "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #050505;
+            color: #e2e2e2;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .glass-panel {
+            background: rgba(18, 20, 20, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid #222222;
+        }
+
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(255, 95, 31, 0.4);
+        }
+
+        .neon-glow-intense {
+            box-shadow: 0 0 20px rgba(255, 95, 31, 0.6);
+        }
+        
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .ticker {
+            display: inline-block;
+            animation: ticker 15s linear infinite;
+        }
+        
+        @keyframes ticker {
+            0% { transform: translate3d(100%, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 95, 31, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 95, 31, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 95, 31, 0); }
+        }
+
+        /* Hide scrollbar for grid but allow scrolling */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-body-md h-screen w-full flex flex-col overflow-hidden select-none bg-surface">
+<!-- Top Navigation Area (Combines Location, Actions, and Title) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface px-container-padding pt-12 pb-4 flex flex-col gap-4">
+<!-- Utility Row -->
+<div class="flex justify-between items-center w-full">
+<div class="flex items-center gap-2 bg-surface-container rounded-full px-4 py-2 border border-[#1F1F1F]">
+<span class="material-symbols-outlined text-primary text-[18px]">location_on</span>
+<span class="font-label-sm text-label-sm text-on-surface">Shivalik, Room 304</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-[#1F1F1F] relative active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-surface">notifications</span>
+<div class="absolute top-2 right-2 w-2 h-2 bg-primary-container rounded-full"></div>
+</button>
+</div>
+<!-- Title Row -->
+<div class="flex items-center gap-3">
+<h1 class="font-headline-lg text-headline-lg text-on-surface uppercase tracking-wide drop-shadow-[0_0_10px_rgba(255,95,31,0.2)]">
+                Tonight's Shelf
+            </h1>
+<div class="w-3 h-3 bg-primary-container rounded-full pulse-dot"></div>
+</div>
+<!-- Live Ticker -->
+<div class="w-full bg-[#121212] border border-[#1F1F1F] rounded-lg py-3 px-4 flex items-center gap-3 overflow-hidden">
+<div class="ticker-wrap h-[20px] flex items-center">
+<div class="ticker font-label-sm text-label-sm text-primary uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255,95,31,0.8)]">
+                    🔥 KARTIK JUST GRABBED MAGGI IN ROOM 212 • 🍿 ARJUN ADDED POPCORN TO THE SHELF • 🥤 REHA IS LOOKING FOR COKE • 
+                </div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto hide-scrollbar pt-[240px] pb-[100px] px-container-padding flex flex-col gap-section-gap">
+<!-- Product Grid -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Card 1: Maggi -->
+<div class="bg-[#121212] border border-primary-container rounded-DEFAULT p-4 flex flex-col gap-3 relative overflow-hidden neon-glow active:scale-95 transition-transform duration-150">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary-container/10 rounded-bl-full blur-xl"></div>
+<div class="h-24 w-full flex items-center justify-center relative z-10">
+<img class="h-full object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" data-alt="A stylized, high-contrast digital illustration of an instant noodle packet, specifically resembling Maggi. The packet is angled dynamically, with sharp edges and a glowing electric orange outline against a deep charcoal background. The lighting is dramatic, suggesting a late-night, neon-lit dorm room aesthetic with a rebellious, energetic vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBS8GbLxU4aPaAV9aMMhovsvP36DZYvoIs2GbUMsDPMkihA-ii6hfSkciOuu9Z-RBPTV6RlK32tcIBFy1rwOQWmNF_5T8IJ5UFhaBy-1UTfvebKxbs5zWG_KQE77qMNybxJEzn0BFZuh0q16a2eQTWLOyfi52XMn7ghhewc-RiAW4lrBWr101cwAMrDoFEQ8hDZIkV4yWzb5VT_sDq78ktIZMsieEblv7EOV8QxTQJSbu1rviFkWwmY">
+</div>
+<div class="flex flex-col z-10">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase">Maggi</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="font-headline-md text-headline-md text-primary">14</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">units</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2">6 rooms have this</p>
+</div>
+</div>
+<!-- Card 2: Lays -->
+<div class="bg-[#121212] border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col gap-3 relative overflow-hidden active:scale-95 transition-transform duration-150">
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-primary-container/20 text-primary border border-primary-container font-label-sm text-[10px] px-2 py-1 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(255,95,31,0.5)]">Almost Gone</span>
+</div>
+<div class="h-24 w-full flex items-center justify-center relative z-10 mt-4">
+<img class="h-full object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" data-alt="A stylized digital illustration of a bright yellow potato chip bag, angled slightly, floating against a pure black background. The bag has a subtle neon orange rim light, giving it a premium, high-contrast, late-night campus aesthetic. The style is bold and minimalistic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8">
+</div>
+<div class="flex flex-col z-10">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase">Lays Chips</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="font-headline-md text-headline-md text-on-surface">2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">units</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2">1 room has this</p>
+</div>
+</div>
+<!-- Card 3: Kurkure -->
+<div class="bg-[#121212] border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col gap-3 relative overflow-hidden active:scale-95 transition-transform duration-150">
+<div class="h-24 w-full flex items-center justify-center relative z-10">
+<img class="h-full object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" data-alt="A stylized digital illustration of an orange spicy snack bag (like Kurkure) floating in a dark void. The bag is lit with harsh, dramatic lighting, emphasizing its crinkled texture. A subtle glowing orange aura surrounds the object, fitting a dark, neon-infused, premium midnight-snack aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbIwvG8waF6ql68810MiFA3ZsgaTypSd5psfXN6qfgegN0p6uLuTVDO_EM-rRo5TkvcD1FTyRN8hg_jAuODADC2TvJahww9noX2JU_seMri2yWqozFB52iyDgtdSlZD65ztsbP0xLrJxy9-w3ytc4YqogMxLgrgRsB-0ErMBbnq5czQLeQXioL1Zt41qD-nnzkJfRZOuHx8kSTCePlH_BxPyfNeLafFRTqqDO9rbC2aQ7hU_3ZH7QA">
+</div>
+<div class="flex flex-col z-10">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase">Kurkure</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="font-headline-md text-headline-md text-on-surface">8</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">units</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2">4 rooms have this</p>
+</div>
+</div>
+<!-- Card 4: Coca Cola -->
+<div class="bg-[#121212] border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col gap-3 relative overflow-hidden active:scale-95 transition-transform duration-150">
+<div class="absolute top-2 right-2 z-20">
+<span class="bg-error-container/20 text-error border border-error font-label-sm text-[10px] px-2 py-1 rounded-full uppercase tracking-wider">Last One</span>
+</div>
+<div class="h-24 w-full flex items-center justify-center relative z-10 mt-4">
+<img class="h-full object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" data-alt="A digital illustration of a generic red cola can covered in condensation, set against a pitch-black background. The can has a sharp, high-contrast rim light and subtle neon reflections, conveying a cold, refreshing, premium midnight aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G">
+</div>
+<div class="flex flex-col z-10">
+<h3 class="font-label-lg text-label-lg text-on-surface uppercase">Coca Cola</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="font-headline-md text-headline-md text-error">1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">unit</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2">1 room has this</p>
+</div>
+</div>
+<!-- Card 5: Oats (Out of Stock) -->
+<div class="bg-[#121212] border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col gap-3 relative overflow-hidden opacity-60">
+<div class="h-24 w-full flex items-center justify-center relative z-10 grayscale">
+<img class="h-full object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" data-alt="A stylized digital illustration of a bowl of oats, rendered in shades of grey and charcoal to indicate it is out of stock. The lighting is flat and moody, maintaining a minimalist dark aesthetic against a pure black background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwKxRdou5JLdGAjXoO8zD80swKlAevmZ7a-cr5H09y5AID9fvhdylaXNE8TiGDPMLNZbP2t1FwQgqP0bAPJ_mFaD9JUUcLTix_52apmAjv6QnU5BN15B4uhLMF8INHyCK-5AnGo5HkibaTvJ-j_5Dckiehqy7x7tMe0eMihXVr_42hh5tZWaWdD1zQOWTuGy5B8lc3NhtpIJ0R9IO1CV6M_dao_Iemm-B1yp8igL9hchc14bMFQ6eJ">
+</div>
+<div class="flex flex-col z-10">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant uppercase">Oats</h3>
+<div class="flex items-center justify-between mt-1">
+<span class="font-headline-md text-headline-md text-on-surface-variant">0</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">units</span>
+</div>
+<button class="mt-2 w-full py-2 bg-transparent border border-primary-container text-primary font-label-sm rounded-full uppercase tracking-wider hover:bg-primary-container/10 active:scale-95 transition-all">
+                        Request This
+                    </button>
+</div>
+</div>
+<!-- Empty Slot to balance grid -->
+<div class="rounded-DEFAULT border border-dashed border-[#1F1F1F] flex items-center justify-center p-4">
+<span class="material-symbols-outlined text-[#1F1F1F] text-4xl">add</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (from Shared Components JSON) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-surface-dim/80 backdrop-blur-xl docked full-width rounded-t-lg border-t border-outline-variant/30 shadow-[0_-4px_20px_rgba(255,95,31,0.1)]">
+<!-- Active Nav Item (Shelf / Home) -->
+<button class="flex flex-col items-center justify-center bg-primary-container/20 text-primary rounded-full p-3 shadow-[0_0_15px_rgba(255,95,31,0.4)] hover:text-primary transition-colors scale-110 duration-200 ease-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+</button>
+<!-- Inactive Nav Items -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">emoji_events</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-3 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">person</span>
+</button>
+</nav>
+<script>
+        // Simple haptic feedback simulation for buttons
+        document.querySelectorAll('button, .bg-\\[\\#121212\\]').forEach(el => {
+            el.addEventListener('click', () => {
+                if (navigator.vibrate) {
+                    navigator.vibrate(15); // Short tap
+                }
+            });
+        });
+    </script>
+
+
+</body></html>
