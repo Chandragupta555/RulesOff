@@ -110,7 +110,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
               hasCompletedSetup: false,
             };
             setUser(initialDoc);
-            saveUserProfileDoc(firebaseUser.uid, initialDoc);
           }
           setLoading(false);
         });

@@ -1,18 +1,47 @@
-import React, { useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { useRequests } from '../context/RequestContext';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
+import {
+  FirestoreRequest,
+  subscribeToIncomingRequests,
+  subscribeToOutgoingRequests,
+  acceptRequestDoc,
+  declineRequestDoc,
+  cancelRequestDoc,
+  fulfillRequestDoc
+} from '../firebase/requests';
 
 export const RequestsScreen: React.FC = () => {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as 'incoming' | 'outgoing') || 'incoming';
   const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>(initialTab);
 
   const { user } = useUser();
-  const { requests, acceptRequest, declineRequest, cancelRequest, fulfillRequest } = useRequests();
+
+  const [incomingRequests, setIncomingRequests] = useState<FirestoreRequest[]>([]);
+  const [outgoingRequests, setOutgoingRequests] = useState<FirestoreRequest[]>([]);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+
+  // Subscribe to real-time Firestore requests for authenticated user UID
+  useEffect(() => {
+    if (!user.uid) return;
+
+    const unsubIncoming = subscribeToIncomingRequests(user.uid, (items) => {
+      setIncomingRequests(items);
+    });
+
+    const unsubOutgoing = subscribeToOutgoingRequests(user.uid, (items) => {
+      setOutgoingRequests(items);
+    });
+
+    return () => {
+      unsubIncoming();
+      unsubOutgoing();
+    };
+  }, [user.uid]);
 
   const userRoom = user.roomNumber || 'A304';
 
@@ -21,11 +50,63 @@ export const RequestsScreen: React.FC = () => {
     setSearchParams({ tab });
   };
 
-  // Filter requests
-  const incomingRequests = requests.filter((r) => r.sellerRoom === userRoom);
-  const outgoingRequests = requests.filter((r) => r.buyerRoom === userRoom);
-
   const activeIncomingCount = incomingRequests.filter((r) => r.status === 'pending').length;
+
+  const handleAccept = async (requestId: string) => {
+    setActionLoadingId(requestId);
+    setActionError('');
+    try {
+      await acceptRequestDoc(requestId);
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (err: any) {
+      console.error('[RequestsScreen] Accept error:', err);
+      setActionError('Failed to accept request.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDecline = async (requestId: string) => {
+    setActionLoadingId(requestId);
+    setActionError('');
+    try {
+      await declineRequestDoc(requestId);
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (err: any) {
+      console.error('[RequestsScreen] Decline error:', err);
+      setActionError('Failed to decline request.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleCancel = async (requestId: string) => {
+    setActionLoadingId(requestId);
+    setActionError('');
+    try {
+      await cancelRequestDoc(requestId);
+      if (navigator.vibrate) navigator.vibrate(30);
+    } catch (err: any) {
+      console.error('[RequestsScreen] Cancel error:', err);
+      setActionError('Failed to cancel request.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleFulfill = async (requestId: string) => {
+    setActionLoadingId(requestId);
+    setActionError('');
+    try {
+      await fulfillRequestDoc(requestId);
+      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+    } catch (err: any) {
+      console.error('[RequestsScreen] Fulfill error:', err);
+      setActionError(err.message || 'Failed to mark as fulfilled.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   return (
     <div className="font-sans min-h-screen w-full flex flex-col select-none bg-[#121414] text-[#e2e2e2] pb-28">
@@ -53,9 +134,13 @@ export const RequestsScreen: React.FC = () => {
           >
             <span>Incoming</span>
             {activeIncomingCount > 0 && (
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                activeTab === 'incoming' ? 'bg-black text-primary-container' : 'bg-primary-container text-black'
-              }`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                  activeTab === 'incoming'
+                    ? 'bg-black text-primary-container'
+                    : 'bg-primary-container text-black'
+                }`}
+              >
                 {activeIncomingCount}
               </span>
             )}
@@ -77,6 +162,12 @@ export const RequestsScreen: React.FC = () => {
 
       {/* Main Canvas */}
       <main className="w-full px-4 pt-4 flex flex-col gap-4 max-w-md mx-auto flex-1">
+        {actionError && (
+          <div className="text-error text-xs font-semibold text-center bg-error-container/20 py-2.5 px-4 rounded-xl border border-error/30">
+            {actionError}
+          </div>
+        )}
+
         {/* INCOMING TAB CONTENT */}
         {activeTab === 'incoming' && (
           <div className="flex flex-col gap-3">
@@ -87,6 +178,7 @@ export const RequestsScreen: React.FC = () => {
                 const isAccepted = req.status === 'accepted';
                 const isFulfilled = req.status === 'fulfilled';
                 const isDeclined = req.status === 'declined';
+                const isCancelled = req.status === 'cancelled';
 
                 return (
                   <div
@@ -98,95 +190,102 @@ export const RequestsScreen: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <h2 className="text-base font-extrabold text-on-surface">
-                            {req.buyerName}
-                          </h2>
-                          <span className="text-xs font-semibold text-primary-container bg-primary-container/10 px-2 py-0.5 rounded-full border border-primary-container/30">
                             Room {req.buyerRoom}
+                          </h2>
+                          <span className="text-xs text-on-surface-variant font-medium">
+                            ({req.buyerName})
                           </span>
                         </div>
-                        <p className="text-xs text-on-surface-variant mt-0.5">
-                          {req.method === 'delivery' ? '🚀 Delivery requested' : '🏃 Pickup requested'}
-                        </p>
+                        <span className="text-[11px] text-primary-container font-semibold">
+                          {req.method === 'delivery' ? '🚚 Room Delivery Requested' : '🚶 Self Pickup'}
+                        </span>
                       </div>
+
+                      {/* Status Tag */}
+                      <span
+                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                          isPending
+                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 animate-pulse'
+                            : isAccepted
+                            ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                            : isFulfilled
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}
+                      >
+                        {req.status}
+                      </span>
                     </div>
 
-                    {/* Product Details */}
-                    <div className="flex gap-3 items-center bg-[#181a1a] p-3 rounded-xl border border-[#2a2c2c]">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-12 h-12 object-cover rounded-lg bg-black border border-[#333535]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-white truncate">
-                          {product.name}
-                        </h3>
-                        <span className="text-xs text-on-surface-variant">
-                          Qty: <strong className="text-white">{req.quantity}</strong> • Total: <strong className="text-primary-container">₹{req.totalPrice}</strong>
+                    {/* Product & Total */}
+                    <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-xl p-3 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-10 h-10 object-contain rounded-lg bg-black/40 p-1"
+                        />
+                        <div>
+                          <span className="text-xs font-bold text-white block">
+                            {req.quantity}x {req.productName}
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant font-mono">
+                            ₹{req.price} / unit
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-extrabold text-primary-container font-mono block">
+                          ₹{req.price * req.quantity + (req.deliveryFee || 0)}
+                        </span>
+                        <span className="text-[9px] text-on-surface-variant uppercase font-semibold">
+                          Total
                         </span>
                       </div>
                     </div>
 
-                    {/* Action Buttons for Pending */}
-                    {isPending && (
-                      <div className="flex gap-2.5 mt-1">
+                    {/* Action Buttons for Seller */}
+                    {isPending && req.id && (
+                      <div className="flex gap-2 mt-1">
                         <button
                           type="button"
-                          onClick={() => acceptRequest(req.id)}
-                          className="flex-1 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-green-500 hover:bg-green-400 active:scale-95 transition-all cursor-pointer shadow-md shadow-green-500/20"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => declineRequest(req.id)}
-                          className="flex-1 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-red-400 bg-[#241a1a] hover:bg-red-950/60 border border-red-500/40 active:scale-95 transition-all cursor-pointer"
+                          onClick={() => handleDecline(req.id!)}
+                          disabled={actionLoadingId === req.id}
+                          className="flex-1 bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs py-2.5 rounded-xl uppercase tracking-wider hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer"
                         >
                           Decline
                         </button>
-                      </div>
-                    )}
-
-                    {/* Accepted State -> Mark as Fulfilled */}
-                    {isAccepted && (
-                      <div className="flex flex-col gap-2 mt-1">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-green-400 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/30">
-                          <span className="material-symbols-outlined text-sm">check_circle</span>
-                          <span>Accepted — Waiting for {req.method === 'delivery' ? 'Delivery' : 'Pickup'}</span>
-                        </div>
                         <button
                           type="button"
-                          onClick={() => fulfillRequest(req.id)}
-                          className="w-full py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-all cursor-pointer"
+                          onClick={() => handleAccept(req.id!)}
+                          disabled={actionLoadingId === req.id}
+                          className="flex-1 bg-green-500 text-black font-extrabold text-xs py-2.5 rounded-xl uppercase tracking-wider neon-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer"
                         >
-                          Mark as Fulfilled
+                          {actionLoadingId === req.id ? 'Saving...' : 'Accept Request'}
                         </button>
                       </div>
                     )}
 
-                    {/* Fulfilled State */}
-                    {isFulfilled && (
-                      <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-green-400 bg-green-500/10 py-2 rounded-full border border-green-500/20">
-                        <span className="material-symbols-outlined text-sm">verified</span>
-                        <span>Fulfilled & Inventory Decremented</span>
-                      </div>
-                    )}
-
-                    {/* Declined State */}
-                    {isDeclined && (
-                      <div className="text-xs text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/30 font-semibold">
-                        You declined this request.
-                      </div>
+                    {isAccepted && req.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleFulfill(req.id!)}
+                        disabled={actionLoadingId === req.id}
+                        className="w-full bg-primary-container text-black font-extrabold text-xs py-3 rounded-xl uppercase tracking-wider neon-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer mt-1"
+                      >
+                        {actionLoadingId === req.id ? 'Processing...' : '✔ Mark as Fulfilled'}
+                      </button>
                     )}
                   </div>
                 );
               })
             ) : (
-              <div className="flex flex-col items-center justify-center text-center py-14 px-6 bg-[#121212] rounded-2xl border border-[#1F1F1F] mt-4">
-                <span className="text-5xl mb-3">📥</span>
-                <h3 className="text-base font-bold text-on-surface mb-1">No Incoming Requests</h3>
-                <p className="text-xs text-on-surface-variant max-w-xs leading-relaxed">
-                  When other hostel students request items from your room, they'll appear here.
+              <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
+                  inbox
+                </span>
+                <p className="text-xs font-semibold text-on-surface-variant">
+                  No incoming requests right now.
                 </p>
               </div>
             )}
@@ -201,128 +300,99 @@ export const RequestsScreen: React.FC = () => {
                 const product = MOCK_PRODUCTS.find((p) => p.id === req.productId) || MOCK_PRODUCTS[0];
                 const isPending = req.status === 'pending';
                 const isAccepted = req.status === 'accepted';
-                const isDeclined = req.status === 'declined';
                 const isFulfilled = req.status === 'fulfilled';
+                const isDeclined = req.status === 'declined';
+                const isCancelled = req.status === 'cancelled';
 
                 return (
                   <div
                     key={req.id}
                     className="bg-[#121212] border border-[#1F1F1F] hover:border-primary-container/40 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200"
                   >
-                    {/* Header */}
+                    {/* Seller Header */}
                     <div className="flex justify-between items-start">
                       <div>
-                        <h2 className="text-base font-extrabold text-on-surface">
-                          Room {req.sellerRoom} ({req.sellerName})
-                        </h2>
-                        <span className="text-xs text-on-surface-variant">
-                          {req.method === 'delivery' ? '🚀 Delivery' : '🏃 Pickup'}
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base font-extrabold text-on-surface">
+                            Request to Room {req.sellerRoom}
+                          </h2>
+                          <span className="text-xs text-on-surface-variant font-medium">
+                            ({req.sellerName})
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-primary-container font-semibold">
+                          {req.method === 'delivery' ? '🚚 Room Delivery' : '🚶 Self Pickup'}
                         </span>
                       </div>
 
-                      {/* Status Badges */}
-                      <div>
-                        {isPending && (
-                          <span className="text-xs font-semibold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
-                            <span className="material-symbols-outlined text-xs">hourglass_empty</span>
-                            Pending
-                          </span>
-                        )}
-                        {isAccepted && (
-                          <span className="text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/30 px-2.5 py-1 rounded-full">
-                            Accepted!
-                          </span>
-                        )}
-                        {isDeclined && (
-                          <span className="text-xs font-bold text-red-400 bg-red-500/15 border border-red-500/30 px-2.5 py-1 rounded-full">
-                            Declined
-                          </span>
-                        )}
-                        {isFulfilled && (
-                          <span className="text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/30 px-2.5 py-1 rounded-full">
-                            Completed ✓
-                          </span>
-                        )}
-                      </div>
+                      {/* Status Tag */}
+                      <span
+                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                          isPending
+                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/30 animate-pulse'
+                            : isAccepted
+                            ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                            : isFulfilled
+                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                            : 'bg-red-500/10 text-red-400 border-red-500/30'
+                        }`}
+                      >
+                        {isPending
+                          ? 'Waiting for response'
+                          : isAccepted
+                          ? `Accepted! Head to Room ${req.sellerRoom}`
+                          : req.status}
+                      </span>
                     </div>
 
-                    {/* Product Summary */}
-                    <div className="flex gap-3 items-center bg-[#181a1a] p-3 rounded-xl border border-[#2a2c2c]">
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-12 h-12 object-cover rounded-lg bg-black border border-[#333535]"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-bold text-white truncate">
-                          {product.name}
-                        </h3>
-                        <span className="text-xs text-on-surface-variant">
-                          Qty: <strong className="text-white">{req.quantity}</strong> • Total: <strong className="text-primary-container">₹{req.totalPrice}</strong>
+                    {/* Product & Total */}
+                    <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-xl p-3 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="w-10 h-10 object-contain rounded-lg bg-black/40 p-1"
+                        />
+                        <div>
+                          <span className="text-xs font-bold text-white block">
+                            {req.quantity}x {req.productName}
+                          </span>
+                          <span className="text-[10px] text-on-surface-variant font-mono">
+                            ₹{req.price} / unit
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-extrabold text-primary-container font-mono block">
+                          ₹{req.price * req.quantity + (req.deliveryFee || 0)}
+                        </span>
+                        <span className="text-[9px] text-on-surface-variant uppercase font-semibold">
+                          Total
                         </span>
                       </div>
                     </div>
 
-                    {/* Detailed Status Message & Actions */}
-                    <div className="mt-0.5 flex flex-col gap-2">
-                      {isPending && (
-                        <div className="bg-[#1e1b18] border border-orange-500/30 rounded-xl p-3 flex flex-col gap-2">
-                          <div className="flex items-center gap-2 text-xs font-bold text-orange-300">
-                            <span className="material-symbols-outlined text-base text-primary-container animate-pulse">
-                              hourglass_empty
-                            </span>
-                            <span>Waiting for response from Room {req.sellerRoom}...</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => cancelRequest(req.id)}
-                            className="mt-1 py-1.5 px-3 rounded-lg bg-[#241a1a] hover:bg-red-950/60 text-red-400 border border-red-500/40 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer self-start"
-                          >
-                            Cancel Request
-                          </button>
-                        </div>
-                      )}
-
-                      {isAccepted && (
-                        <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 flex items-start gap-2">
-                          <span className="material-symbols-outlined text-green-400 text-lg">check_circle</span>
-                          <p className="text-xs text-green-200">
-                            <strong className="font-extrabold text-green-400 block">Request Accepted!</strong>
-                            {req.method === 'delivery'
-                              ? `Seller ${req.sellerName} is on their way to deliver to your Room ${req.buyerRoom}!`
-                              : `Head to Room ${req.sellerRoom} to pick up your item.`}
-                          </p>
-                        </div>
-                      )}
-
-                      {isDeclined && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex flex-col gap-2">
-                          <div className="flex items-start gap-2">
-                            <span className="material-symbols-outlined text-red-400 text-lg">block</span>
-                            <p className="text-xs text-red-200">
-                              <strong className="font-extrabold text-red-400 block">Request Declined</strong>
-                              Room {req.sellerRoom} declined this request.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/catalog/${req.productId}`)}
-                            className="py-2 px-3 rounded-xl bg-primary-container/20 text-primary-container border border-primary-container/40 text-xs font-bold uppercase tracking-wider hover:bg-primary-container/30 transition-all text-center"
-                          >
-                            Try Another Room from Shelf
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {/* Cancel Button for Buyer */}
+                    {isPending && req.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleCancel(req.id!)}
+                        disabled={actionLoadingId === req.id}
+                        className="w-full bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs py-2.5 rounded-xl uppercase tracking-wider hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer mt-1"
+                      >
+                        {actionLoadingId === req.id ? 'Cancelling...' : 'Cancel Request'}
+                      </button>
+                    )}
                   </div>
                 );
               })
             ) : (
-              <div className="flex flex-col items-center justify-center text-center py-14 px-6 bg-[#121212] rounded-2xl border border-[#1F1F1F] mt-4">
-                <span className="text-5xl mb-3">📤</span>
-                <h3 className="text-base font-bold text-on-surface mb-1">No Outgoing Requests</h3>
-                <p className="text-xs text-on-surface-variant max-w-xs leading-relaxed mb-4">
-                  Tap "Request" on any item in the Catalog or Room List to send a request!
+              <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-8 text-center flex flex-col items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
+                  send
+                </span>
+                <p className="text-xs font-semibold text-on-surface-variant">
+                  You haven't sent any requests yet.
                 </p>
               </div>
             )}
@@ -330,8 +400,8 @@ export const RequestsScreen: React.FC = () => {
         )}
       </main>
 
-      {/* Docked Bottom Nav Bar */}
-      <BottomNavBar activeTab="requests" />
+      {/* Bottom Navigation */}
+      <BottomNavBar />
     </div>
   );
 };

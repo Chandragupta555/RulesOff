@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider, useUser } from './context/UserContext';
-import { RequestProvider } from './context/RequestContext';
 import { SplashScreen } from './screens/SplashScreen';
 import { VerificationGateScreen } from './screens/VerificationGateScreen';
 import { HostelSetupScreen } from './screens/HostelSetupScreen';
@@ -116,11 +115,9 @@ const AppRoutes: React.FC = () => {
 export default function App() {
   return (
     <UserProvider>
-      <RequestProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </RequestProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
     </UserProvider>
   );
 }

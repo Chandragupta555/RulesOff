@@ -1,46 +1,97 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { MOCK_PRODUCTS, MOCK_LISTINGS } from '../data/mockCatalog';
-import { useRequests } from '../context/RequestContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { useUser } from '../context/UserContext';
+import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import { RequestMethod } from '../types/request';
+import { createRequestDoc, FirestoreRequest } from '../firebase/requests';
+import { FirestoreListing } from '../firebase/listings';
+import { HostelName } from '../types/user';
 
 export const RequestConfirmationScreen: React.FC = () => {
   const { listingId } = useParams<{ listingId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { createRequest } = useRequests();
+  const { user } = useUser();
 
   const methodParam = (searchParams.get('method') as RequestMethod) || 'pickup';
 
-  // Find listing & product
-  const listing = MOCK_LISTINGS.find((l) => l.id === listingId) || MOCK_LISTINGS[0];
-  const product = MOCK_PRODUCTS.find((p) => p.id === listing.productId) || MOCK_PRODUCTS[0];
-
+  const [listing, setListing] = useState<FirestoreListing | null>(null);
+  const [loadingListing, setLoadingListing] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const maxQty = Math.max(1, listing.quantity);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const deliveryFee = methodParam === 'delivery' ? 5 : 0;
-  const itemTotal = listing.price * quantity;
+  // Load target listing from Firestore
+  useEffect(() => {
+    if (!listingId) return;
+    setLoadingListing(true);
+    const docRef = doc(db, 'listings', listingId);
+    getDoc(docRef)
+      .then((snap) => {
+        if (snap.exists()) {
+          setListing({ id: snap.id, ...(snap.data() as Omit<FirestoreListing, 'id'>) });
+        } else {
+          console.warn('[RequestConfirmation] Listing doc not found:', listingId);
+        }
+      })
+      .catch((err) => console.error('[RequestConfirmation] Failed to load listing:', err))
+      .finally(() => setLoadingListing(false));
+  }, [listingId]);
+
+  const product = MOCK_PRODUCTS.find((p) => p.id === listing?.productId) || MOCK_PRODUCTS[0];
+  const maxQty = Math.max(1, listing?.quantity || 1);
+
+  const deliveryFee = methodParam === 'delivery' ? (listing?.deliveryFee || 5) : 0;
+  const itemTotal = (listing?.price || product.mrp) * quantity;
   const grandTotal = itemTotal + deliveryFee;
 
-  const handleSendRequest = () => {
-    createRequest({
-      listingId: listing.id,
-      productId: product.id,
-      quantity,
-      method: methodParam,
-      sellerRoom: listing.sellerRoom,
-      sellerName: listing.sellerName,
-      price: listing.price,
-      deliveryFee,
-    });
+  const handleSendRequest = async () => {
+    if (!listing || !user.uid) return;
 
-    if (navigator.vibrate) {
-      navigator.vibrate([30, 50, 30]);
+    setIsSubmitting(true);
+    setErrorMsg('');
+
+    try {
+      await createRequestDoc({
+        buyerUid: user.uid,
+        buyerName: user.name || 'PEC Student',
+        buyerRoom: user.roomNumber || 'A304',
+        buyerHostel: (user.hostel as HostelName) || 'Shivalik',
+        sellerUid: listing.sellerUid,
+        sellerName: listing.sellerName,
+        sellerRoom: listing.sellerRoom,
+        sellerHostel: listing.hostel,
+        listingId: listing.id || listingId || '',
+        productId: product.id,
+        productName: product.name,
+        quantity,
+        method: methodParam,
+        price: listing.price,
+        deliveryFee,
+      });
+
+      if (navigator.vibrate) {
+        navigator.vibrate([30, 50, 30]);
+      }
+
+      navigate('/requests?tab=outgoing');
+    } catch (err: any) {
+      console.error('[RequestConfirmation] Error creating request:', err);
+      setErrorMsg(err.message || 'Failed to send request. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate('/requests?tab=outgoing');
   };
+
+  if (loadingListing) {
+    return (
+      <div className="bg-[#121414] min-h-screen flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
 
   return (
     <div className="font-sans min-h-screen w-full flex flex-col select-none bg-[#121414] text-[#e2e2e2] pb-12">
@@ -75,11 +126,11 @@ export const RequestConfirmationScreen: React.FC = () => {
               {product.name}
             </h2>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Seller: <span className="font-semibold text-white">{listing.sellerName}</span> (Room {listing.sellerRoom})
+              Seller: <span className="font-semibold text-white">{listing?.sellerName || 'PEC Student'}</span> (Room {listing?.sellerRoom || 'A304'})
             </p>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-xs font-bold text-primary-container bg-primary-container/10 px-2.5 py-0.5 rounded-full border border-primary-container/30">
-                ₹{listing.price} / unit
+                ₹{listing?.price || product.mrp} / unit
               </span>
               <span className="text-[10px] font-semibold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                 Awake
@@ -102,85 +153,97 @@ export const RequestConfirmationScreen: React.FC = () => {
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1}
-              className="w-9 h-9 rounded-full bg-[#2a2c2c] hover:bg-primary-container hover:text-black font-extrabold text-lg flex items-center justify-center disabled:opacity-30 disabled:hover:bg-[#2a2c2c] disabled:hover:text-white transition-all cursor-pointer"
+              className="w-8 h-8 rounded-full bg-[#121212] text-on-surface flex items-center justify-center font-bold disabled:opacity-30 cursor-pointer"
             >
               -
             </button>
-            <span className="w-8 text-center text-lg font-extrabold text-primary-container">
+            <span className="text-sm font-extrabold text-primary-container min-w-[20px] text-center font-mono">
               {quantity}
             </span>
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
               disabled={quantity >= maxQty}
-              className="w-9 h-9 rounded-full bg-[#2a2c2c] hover:bg-primary-container hover:text-black font-extrabold text-lg flex items-center justify-center disabled:opacity-30 disabled:hover:bg-[#2a2c2c] disabled:hover:text-white transition-all cursor-pointer"
+              className="w-8 h-8 rounded-full bg-[#121212] text-on-surface flex items-center justify-center font-bold disabled:opacity-30 cursor-pointer"
             >
               +
             </button>
           </div>
         </div>
 
-        {/* Fulfillment Method Read-Only */}
-        <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-4 flex justify-between items-center">
-          <span className="text-sm font-bold text-on-surface">Fulfillment Method</span>
-          <span className="text-xs font-bold uppercase tracking-wider text-primary-container bg-primary-container/10 border border-primary-container/30 px-3 py-1 rounded-full">
-            {methodParam === 'delivery' ? '🚀 Room Delivery' : '🏃 Self Pickup'}
-          </span>
+        {/* Fulfillment Method Card */}
+        <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-container/10 text-primary-container flex items-center justify-center">
+            <span className="material-symbols-outlined">
+              {methodParam === 'delivery' ? 'local_shipping' : 'directions_walk'}
+            </span>
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm font-extrabold text-on-surface uppercase">
+              {methodParam === 'delivery' ? 'Room Delivery' : 'Self Pickup'}
+            </h3>
+            <p className="text-xs text-on-surface-variant">
+              {methodParam === 'delivery'
+                ? `Seller will deliver to your room (+₹${deliveryFee})`
+                : `Walk to Room ${listing?.sellerRoom} to collect`}
+            </p>
+          </div>
         </div>
 
-        {/* Price Breakdown */}
+        {/* Order Bill Breakdown */}
         <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-4 flex flex-col gap-2.5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-on-surface-variant border-b border-[#242424] pb-2">
-            Payment Breakdown
+          <h3 className="text-xs font-extrabold text-on-surface-variant uppercase tracking-wider mb-1">
+            Price Breakdown
           </h3>
-          <div className="flex justify-between text-sm text-on-surface-variant">
-            <span>Item Total ({quantity}x)</span>
-            <span>₹{itemTotal}</span>
+
+          <div className="flex justify-between text-xs text-on-surface">
+            <span>
+              {product.name} x {quantity}
+            </span>
+            <span className="font-mono font-semibold">₹{itemTotal}</span>
           </div>
+
           {methodParam === 'delivery' && (
-            <div className="flex justify-between text-sm text-on-surface-variant">
+            <div className="flex justify-between text-xs text-on-surface">
               <span>Delivery Fee</span>
-              <span>₹{deliveryFee}</span>
+              <span className="font-mono font-semibold">₹{deliveryFee}</span>
             </div>
           )}
-          <div className="flex justify-between text-base font-extrabold text-white pt-2 border-t border-[#242424]">
-            <span>Total Payable</span>
-            <span className="text-primary-container text-lg">₹{grandTotal}</span>
+
+          <div className="pt-2 border-t border-[#1F1F1F] flex justify-between items-baseline mt-1">
+            <span className="text-sm font-extrabold text-on-surface">Total Amount</span>
+            <span className="text-lg font-extrabold text-primary-container font-mono drop-shadow-[0_0_8px_rgba(255,95,31,0.4)]">
+              ₹{grandTotal}
+            </span>
           </div>
         </div>
 
-        {/* Informational Banner */}
-        <div className="bg-[#1e1b18] border border-primary-container/40 rounded-2xl p-4 flex gap-3 items-start">
-          <span className="material-symbols-outlined text-primary-container text-2xl mt-0.5">
-            notifications_active
-          </span>
-          <p className="text-xs text-orange-200/90 leading-relaxed">
-            <strong className="text-primary-container font-extrabold block mb-0.5">
-              Direct Room Request
-            </strong>
-            Seller in Room {listing.sellerRoom} will be notified immediately. You can view status anytime on your Requests screen.
+        {/* Error Alert */}
+        {errorMsg && (
+          <p className="text-error text-xs font-semibold text-center bg-error-container/20 py-2.5 px-4 rounded-xl border border-error/30">
+            {errorMsg}
           </p>
-        </div>
+        )}
 
-        {/* Actions */}
-        <div className="flex flex-col gap-3 mt-2">
-          <button
-            type="button"
-            onClick={handleSendRequest}
-            className="w-full py-4 rounded-full font-extrabold text-sm uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-transform cursor-pointer hover:brightness-110 flex items-center justify-center gap-2"
-          >
-            <span>SEND REQUEST</span>
-            <span className="material-symbols-outlined text-lg">send</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="w-full py-2.5 rounded-full font-bold text-xs uppercase tracking-wider text-on-surface-variant hover:text-white transition-colors cursor-pointer text-center"
-          >
-            Cancel
-          </button>
-        </div>
+        {/* Primary Submit Button */}
+        <button
+          type="button"
+          onClick={handleSendRequest}
+          disabled={isSubmitting}
+          className="w-full bg-primary-container text-black font-extrabold text-sm uppercase tracking-widest py-4 rounded-full neon-glow hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="material-symbols-outlined animate-spin text-black">refresh</span>
+              <span>SENDING REQUEST...</span>
+            </>
+          ) : (
+            <>
+              <span>SEND REQUEST TO ROOM {listing?.sellerRoom}</span>
+              <span className="material-symbols-outlined text-base font-bold">send</span>
+            </>
+          )}
+        </button>
       </main>
     </div>
   );

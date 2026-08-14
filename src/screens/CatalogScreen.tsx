@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { getProductAggregates } from '../data/mockCatalog';
+import { MOCK_PRODUCTS } from '../data/mockCatalog';
+import { ProductAggregate } from '../types/catalog';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { FirestoreListing, subscribeToHostelListings } from '../firebase/listings';
 
 export const CatalogScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -11,7 +13,74 @@ export const CatalogScreen: React.FC = () => {
   const userHostel = user.hostel || 'Shivalik';
   const userRoom = user.roomNumber || 'A304';
 
-  const aggregates = getProductAggregates(userHostel);
+  const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
+  const [isLoadingListings, setIsLoadingListings] = useState(true);
+
+  // Subscribe in real-time to all listings for user's hostel in Firestore
+  useEffect(() => {
+    setIsLoadingListings(true);
+    const unsubscribe = subscribeToHostelListings(userHostel, (items) => {
+      setHostelListings(items);
+      setIsLoadingListings(false);
+    });
+    return () => unsubscribe();
+  }, [userHostel]);
+
+  // Aggregate Firestore listings by product
+  const aggregates: ProductAggregate[] = MOCK_PRODUCTS.map((product) => {
+    const matchingListings = hostelListings.filter(
+      (l) => l.productId === product.id && l.isSellerAwake && l.quantity > 0
+    );
+
+    const totalUnits = matchingListings.reduce((sum, l) => sum + l.quantity, 0);
+    const awakeRooms = new Set(matchingListings.map((l) => l.sellerRoom));
+    const lowestPrice =
+      matchingListings.length > 0
+        ? Math.min(...matchingListings.map((l) => l.price))
+        : product.mrp;
+
+    let badge: 'Almost Gone' | 'Last One' | 'Out of Stock' | undefined = undefined;
+    if (totalUnits === 0) {
+      badge = 'Out of Stock';
+    } else if (totalUnits === 1) {
+      badge = 'Last One';
+    } else if (totalUnits <= 3) {
+      badge = 'Almost Gone';
+    }
+
+    return {
+      product,
+      totalUnits,
+      awakeRoomCount: awakeRooms.size,
+      availableListings: matchingListings.map((l) => ({
+        id: l.id || '',
+        productId: l.productId,
+        hostel: l.hostel,
+        sellerRoom: l.sellerRoom,
+        sellerName: l.sellerName,
+        quantity: l.quantity,
+        price: l.price,
+        isSellerAwake: l.isSellerAwake,
+        deliveryOptIn: l.deliveryOptIn,
+        deliveryFee: l.deliveryFee,
+      })),
+      lowestPrice,
+      badge,
+    };
+  });
+
+  // Ticker text from active Firestore listings
+  const activeSellersList = hostelListings.filter((l) => l.isSellerAwake && l.quantity > 0);
+  const tickerText =
+    activeSellersList.length > 0
+      ? activeSellersList
+          .map(
+            (l) =>
+              `🔥 ${l.sellerName.toUpperCase()} HAS ${l.quantity}x ${l.productName.toUpperCase()} IN ROOM ${l.sellerRoom}`
+          )
+          .join(' • ') +
+        ` • ⚡ LIVE SHELF UPDATED IN ${userHostel.toUpperCase()} • `
+      : `⚡ NO ACTIVE SELLERS YET IN ${userHostel.toUpperCase()} • ADD YOUR ITEMS ON PROFILE SCREEN TO SELL TONIGHT • `;
 
   const handleCardClick = (productId: string) => {
     if (navigator.vibrate) {
@@ -54,7 +123,7 @@ export const CatalogScreen: React.FC = () => {
         <div className="w-full bg-[#121212] border border-[#1F1F1F] rounded-xl py-2.5 px-4 flex items-center overflow-hidden max-w-full">
           <div className="ticker-wrap h-5 flex items-center w-full overflow-hidden max-w-full relative">
             <div className="ticker text-xs font-semibold text-primary-container uppercase tracking-wider neon-text-glow">
-              🔥 KARTIK JUST GRABBED MAGGI IN ROOM 212 • 🍿 ARJUN ADDED POPCORN TO THE SHELF • 🥤 REHA IS LOOKING FOR COKE • ⚡ SAMEER IS ONLINE • 🔥 KARTIK JUST GRABBED MAGGI IN ROOM 212 • 🍿 ARJUN ADDED POPCORN TO THE SHELF • 🥤 REHA IS LOOKING FOR COKE • ⚡ SAMEER IS ONLINE •
+              {tickerText} {tickerText}
             </div>
           </div>
         </div>
@@ -99,72 +168,70 @@ export const CatalogScreen: React.FC = () => {
                     !isAvailable ? 'grayscale' : ''
                   }`}
                 >
+                  <div className="absolute inset-0 bg-primary-container/5 rounded-xl blur-lg pointer-events-none"></div>
                   <img
                     src={agg.product.imageUrl}
                     alt={agg.product.name}
-                    className="h-full object-contain filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                    className="h-20 w-auto object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]"
+                    loading="lazy"
                   />
                 </div>
 
-                {/* Info Section */}
-                <div className="flex flex-col z-10">
-                  <h3 className="text-sm font-bold text-on-surface uppercase tracking-wide">
+                {/* Details Section */}
+                <div className="flex flex-col gap-1 z-10">
+                  <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                    {agg.product.category}
+                  </span>
+                  <h3 className="text-base font-extrabold text-on-surface tracking-tight leading-tight">
                     {agg.product.name}
                   </h3>
 
-                  <div className="flex items-center justify-between mt-1">
-                    <span
-                      className={`text-2xl font-extrabold ${
-                        !isAvailable
-                          ? 'text-on-surface-variant/50'
-                          : agg.badge === 'Last One'
-                          ? 'text-error'
-                          : 'text-primary-container'
-                      }`}
-                    >
-                      {agg.totalUnits}
-                    </span>
-                    <span className="text-xs text-on-surface-variant">
-                      {agg.totalUnits === 1 ? 'unit' : 'units'}
+                  {/* Pricing & Stock Stats Row */}
+                  <div className="flex justify-between items-baseline mt-1">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-extrabold text-primary-container font-mono">
+                        ₹{agg.lowestPrice}
+                      </span>
+                      {agg.lowestPrice < agg.product.mrp && (
+                        <span className="text-[10px] text-on-surface-variant line-through font-mono">
+                          ₹{agg.product.mrp}
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="text-[10px] text-on-surface-variant font-medium">
+                      MRP ₹{agg.product.mrp}
                     </span>
                   </div>
 
-                  <p className="text-xs text-on-surface-variant mt-1.5 font-medium">
-                    {isAvailable
-                      ? `${agg.awakeRoomCount} ${agg.awakeRoomCount === 1 ? 'room has this' : 'rooms have this'}`
-                      : '0 rooms active'}
-                  </p>
+                  {/* Stock Availability Footer */}
+                  <div className="mt-2 pt-2 border-t border-[#1F1F1F] flex justify-between items-center text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isAvailable ? 'bg-green-400 animate-pulse' : 'bg-slate-600'
+                        }`}
+                      ></span>
+                      <span className="font-bold text-on-surface">
+                        {isAvailable ? `${agg.totalUnits} available` : 'None nearby'}
+                      </span>
+                    </div>
 
-                  {!isAvailable && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (navigator.vibrate) navigator.vibrate(20);
-                        alert(`Restock request sent for ${agg.product.name}!`);
-                      }}
-                      className="mt-3 w-full py-2 bg-transparent border border-primary-container text-primary text-xs font-semibold rounded-full uppercase tracking-wider hover:bg-primary-container/10 active:scale-95 transition-all cursor-pointer"
-                    >
-                      Request This
-                    </button>
-                  )}
+                    {isAvailable && (
+                      <span className="text-on-surface-variant font-medium">
+                        {agg.awakeRoomCount} {agg.awakeRoomCount === 1 ? 'room' : 'rooms'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
-
-          {/* Add Slot Placeholder */}
-          <div className="rounded-2xl border border-dashed border-[#1F1F1F] flex flex-col items-center justify-center p-4 min-h-[220px] text-center opacity-40 hover:opacity-70 transition-opacity">
-            <span className="material-symbols-outlined text-[#1F1F1F] text-4xl mb-1">add_circle</span>
-            <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-              Restock Shelf
-            </span>
-          </div>
         </div>
       </main>
 
-      {/* Docked Navigation Bar */}
-      <BottomNavBar activeTab="shelf" />
+      {/* Bottom Navigation */}
+      <BottomNavBar />
     </div>
   );
 };

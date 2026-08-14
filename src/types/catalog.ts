@@ -10,6 +10,7 @@ export interface Product {
 
 export interface Listing {
   id: string;
+  sellerUid?: string;
   productId: string;
   hostel: string;
   sellerRoom: string;
@@ -18,6 +19,7 @@ export interface Listing {
   price: number; // Seller price, capped <= mrp
   isSellerAwake: boolean;
   deliveryOptIn: boolean;
+  deliveryFee?: number;
   pendingRequestsCount?: number;
 }
 

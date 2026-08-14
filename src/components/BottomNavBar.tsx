@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRequests } from '../context/RequestContext';
 import { useUser } from '../context/UserContext';
+import { subscribeToIncomingRequests, FirestoreRequest } from '../firebase/requests';
 
 interface BottomNavBarProps {
   activeTab?: 'shelf' | 'requests' | 'rank' | 'profile';
@@ -10,10 +10,17 @@ interface BottomNavBarProps {
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab = 'shelf' }) => {
   const navigate = useNavigate();
   const { user } = useUser();
-  const { requests } = useRequests();
+  const [incomingRequests, setIncomingRequests] = useState<FirestoreRequest[]>([]);
 
-  const userRoom = user.roomNumber || 'A304';
-  const pendingCount = requests.filter((r) => r.sellerRoom === userRoom && r.status === 'pending').length;
+  useEffect(() => {
+    if (!user.uid) return;
+    const unsub = subscribeToIncomingRequests(user.uid, (items) => {
+      setIncomingRequests(items);
+    });
+    return () => unsub();
+  }, [user.uid]);
+
+  const pendingCount = incomingRequests.filter((r) => r.status === 'pending').length;
 
   return (
     <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-[#121414]/95 backdrop-blur-xl border-t border-[#1F1F1F] shadow-[0_-4px_20px_rgba(255,95,31,0.15)]">
@@ -58,7 +65,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab = 'shelf' 
             : 'text-on-surface-variant hover:text-primary'
         }`}
       >
-        <span className="material-symbols-outlined text-2xl">emoji_events</span>
+        <span className="material-symbols-outlined text-2xl">trophy</span>
       </button>
 
       {/* Profile */}
