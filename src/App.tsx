@@ -14,7 +14,14 @@ import { ProfileScreen } from './screens/ProfileScreen';
 
 // Protected Route Guard for Setup
 const RequireVerification: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
+  if (loading) {
+    return (
+      <div className="bg-[#050505] h-screen w-screen flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
   if (!user.isVerified) {
     return <Navigate to="/verify" replace />;
   }
@@ -23,7 +30,14 @@ const RequireVerification: React.FC<{ children: React.ReactNode }> = ({ children
 
 // Protected Route Guard for Catalog
 const RequireSetupComplete: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useUser();
+  const { user, loading } = useUser();
+  if (loading) {
+    return (
+      <div className="bg-[#050505] h-screen w-screen flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
   if (!user.isVerified) {
     return <Navigate to="/verify" replace />;
   }

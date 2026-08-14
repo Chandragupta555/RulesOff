@@ -4,11 +4,13 @@ import { useUser } from '../context/UserContext';
 
 export const SplashScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, loading } = useUser();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (loading) return;
+
     const timer = setTimeout(() => {
       if (user.hasCompletedSetup) {
         navigate('/catalog');
@@ -20,7 +22,7 @@ export const SplashScreen: React.FC = () => {
     }, 2200);
 
     return () => clearTimeout(timer);
-  }, [navigate, user]);
+  }, [navigate, user, loading]);
 
   const handleTap = () => {
     if (user.hasCompletedSetup) {

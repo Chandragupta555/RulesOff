@@ -1,8 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { auth } from '../firebase/config';
+import { authenticatePecUser, signOutUser } from '../firebase/auth';
+import { subscribeToUserProfile, saveUserProfileDoc } from '../firebase/users';
 import { UserProfile, UserContextType, HostelName } from '../types/user';
 import { syncUserListingWithProfile } from '../data/mockCatalog';
 
 const INITIAL_USER: UserProfile = {
+  uid: '',
   name: '',
   email: '',
   hostel: '',
@@ -14,14 +19,10 @@ const INITIAL_USER: UserProfile = {
   hasCompletedSetup: false,
 };
 
-const LOCAL_STORAGE_KEY = 'rulesoff_user_profile_v1';
-
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const validatePecEmail = (email: string): boolean => {
   if (!email) return false;
-  // PEC email pattern: name + "bt" + 2-digit year + branch + "@pec.edu.in"
-  // Example: john.bt21ece@pec.edu.in or rahul_sharma.bt22cse@pec.edu.in
   const pecRegex = /^[a-zA-Z0-9._-]+bt\d{2}[a-zA-Z]+@pec\.edu\.in$/i;
   return pecRegex.test(email.trim());
 };
@@ -29,18 +30,14 @@ export const validatePecEmail = (email: string): boolean => {
 export const parseNameFromPecEmail = (email: string): string => {
   if (!email) return '';
   const cleanEmail = email.trim().toLowerCase();
-  // Match prefix before "btYYbranch@pec.edu.in"
   const match = cleanEmail.match(/^([a-zA-Z0-9._-]+)bt\d{2}[a-zA-Z]+@pec\.edu\.in$/);
   if (match && match[1]) {
     const rawName = match[1];
-    // Replace dots and underscores with spaces
     const parts = rawName.replace(/[._]/g, ' ').split(' ').filter(Boolean);
-    // Capitalize each part
     return parts
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
   }
-  // Fallback if not matching exact PEC regex but has @pec
   const atIndex = cleanEmail.indexOf('@');
   if (atIndex > 0) {
     const prefix = cleanEmail.substring(0, atIndex);
@@ -56,85 +53,131 @@ export const parseNameFromPecEmail = (email: string): string => {
 };
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      console.log('[INSTRUMENTATION] UserContext: Raw localStorage value:', saved);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const isValid =
-          typeof parsed === 'object' &&
-          parsed !== null &&
-          typeof parsed.name === 'string' &&
-          typeof parsed.isVerified === 'boolean';
-        console.log('[INSTRUMENTATION] UserContext: Schema validation result:', isValid ? 'VALID' : 'INVALID', parsed);
-        if (isValid) {
-          return parsed;
-        } else {
-          console.error('[INSTRUMENTATION] UserContext: Corrupted/invalid schema detected in localStorage, resetting to default.');
-        }
-      }
-    } catch (e) {
-      console.error('[INSTRUMENTATION] UserContext: Failed to read/parse user profile from localStorage:', e);
-    }
-    return INITIAL_USER;
-  });
+  const [user, setUser] = useState<UserProfile>(INITIAL_USER);
+  const [loading, setLoading] = useState<boolean>(true);
 
+  // Subscribe to Firebase Auth and Firestore user document
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(user));
-      syncUserListingWithProfile(user.roomNumber, user.isAwake, user.deliveryOptIn);
-      console.log('[INSTRUMENTATION] UserContext: Saved updated user profile to localStorage & synced listing:', user);
-    } catch (e) {
-      console.error('[INSTRUMENTATION] UserContext: Failed to save user profile to localStorage', e);
-    }
-  }, [user]);
+    let docUnsubscribe: (() => void) | null = null;
 
-  const setVerifiedEmail = (email: string, parsedName: string) => {
-    setUser((prev) => ({
-      ...prev,
-      email: email.trim().toLowerCase(),
-      name: parsedName.trim() || parseNameFromPecEmail(email),
-      isVerified: true,
-    }));
+    const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      if (docUnsubscribe) {
+        docUnsubscribe();
+        docUnsubscribe = null;
+      }
+
+      if (firebaseUser) {
+        console.log('[Firebase Auth] User authenticated:', firebaseUser.uid, firebaseUser.email);
+        // Subscribe to Firestore user doc
+        docUnsubscribe = subscribeToUserProfile(firebaseUser.uid, (firestoreProfile) => {
+          if (firestoreProfile) {
+            console.log('[Firestore Users] Loaded user doc:', firestoreProfile);
+            setUser({
+              ...INITIAL_USER,
+              ...firestoreProfile,
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || firestoreProfile.email || '',
+              isVerified: true,
+            });
+            syncUserListingWithProfile(
+              firestoreProfile.roomNumber || '',
+              firestoreProfile.isAwake ?? true,
+              firestoreProfile.deliveryOptIn ?? true
+            );
+          } else {
+            console.log('[Firestore Users] No existing user doc found, seeding initial profile.');
+            const initialDoc: UserProfile = {
+              ...INITIAL_USER,
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              isVerified: true,
+            };
+            setUser(initialDoc);
+            saveUserProfileDoc(firebaseUser.uid, initialDoc);
+          }
+          setLoading(false);
+        });
+      } else {
+        console.log('[Firebase Auth] User signed out.');
+        setUser(INITIAL_USER);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      authUnsubscribe();
+      if (docUnsubscribe) docUnsubscribe();
+    };
+  }, []);
+
+  const setVerifiedEmail = async (email: string, parsedName: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = parsedName.trim() || parseNameFromPecEmail(cleanEmail);
+
+    setLoading(true);
+    try {
+      const firebaseUser = await authenticatePecUser(cleanEmail, cleanName);
+      const updatedProfile: UserProfile = {
+        ...user,
+        uid: firebaseUser.uid,
+        email: cleanEmail,
+        name: cleanName,
+        isVerified: true,
+      };
+      setUser(updatedProfile);
+      await saveUserProfileDoc(firebaseUser.uid, updatedProfile);
+    } catch (error) {
+      console.error('[Firebase Auth] Failed to authenticate email:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const setHostelAndRoom = (hostel: HostelName, roomNumber: string) => {
+  const setHostelAndRoom = async (hostel: HostelName, roomNumber: string) => {
     const raw = roomNumber.trim().toUpperCase();
     const match = raw.match(/([A-Z]\d{3})/);
     const cleaned = match ? match[1] : raw;
-    setUser((prev) => ({
-      ...prev,
+
+    const updated: Partial<UserProfile> = {
       hostel,
       roomNumber: cleaned,
       hasCompletedSetup: true,
       lastHostelChangeDate: Date.now(),
-    }));
+    };
+
+    setUser((prev) => ({ ...prev, ...updated }));
+    if (user.uid) {
+      await saveUserProfileDoc(user.uid, updated);
+    }
   };
 
-  const toggleAwakeStatus = () => {
-    setUser((prev) => ({
-      ...prev,
-      isAwake: !prev.isAwake,
-    }));
+  const toggleAwakeStatus = async () => {
+    const nextVal = !user.isAwake;
+    setUser((prev) => ({ ...prev, isAwake: nextVal }));
+    if (user.uid) {
+      await saveUserProfileDoc(user.uid, { isAwake: nextVal });
+    }
   };
 
-  const toggleDeliveryOptIn = () => {
-    setUser((prev) => ({
-      ...prev,
-      deliveryOptIn: !prev.deliveryOptIn,
-    }));
+  const toggleDeliveryOptIn = async () => {
+    const nextVal = !user.deliveryOptIn;
+    setUser((prev) => ({ ...prev, deliveryOptIn: nextVal }));
+    if (user.uid) {
+      await saveUserProfileDoc(user.uid, { deliveryOptIn: nextVal });
+    }
   };
 
-  const resetUserProfile = () => {
+  const resetUserProfile = async () => {
     setUser(INITIAL_USER);
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    await signOutUser();
   };
 
   return (
     <UserContext.Provider
       value={{
         user,
+        loading,
         setVerifiedEmail,
         setHostelAndRoom,
         toggleAwakeStatus,

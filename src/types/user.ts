@@ -1,6 +1,7 @@
 export type HostelName = 'Shivalik' | 'Aravali' | 'Kurukshetra' | 'Himalaya' | 'Kalpana Chawala' | 'Vindhya';
 
 export interface UserProfile {
+  uid?: string;
   name: string;
   email: string;
   hostel: HostelName | '';
@@ -15,11 +16,12 @@ export interface UserProfile {
 
 export interface UserContextType {
   user: UserProfile;
-  setVerifiedEmail: (email: string, parsedName: string) => void;
-  setHostelAndRoom: (hostel: HostelName, roomNumber: string) => void;
-  toggleAwakeStatus: () => void;
-  toggleDeliveryOptIn: () => void;
-  resetUserProfile: () => void;
+  loading: boolean;
+  setVerifiedEmail: (email: string, parsedName: string) => Promise<void>;
+  setHostelAndRoom: (hostel: HostelName, roomNumber: string) => Promise<void>;
+  toggleAwakeStatus: () => Promise<void>;
+  toggleDeliveryOptIn: () => Promise<void>;
+  resetUserProfile: () => Promise<void>;
   parseNameFromPecEmail: (email: string) => string;
   validatePecEmail: (email: string) => boolean;
 }

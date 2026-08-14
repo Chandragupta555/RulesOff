@@ -45,8 +45,8 @@ export const ProfileScreen: React.FC = () => {
   };
 
   // Sync user awake status with mock seller listing for user room A304
-  const handleToggleAwake = () => {
-    toggleAwakeStatus();
+  const handleToggleAwake = async () => {
+    await toggleAwakeStatus();
     const userListing = MOCK_LISTINGS.find((l) => l.sellerRoom === (user.roomNumber || 'A304'));
     if (userListing) {
       userListing.isSellerAwake = !user.isAwake;
@@ -54,8 +54,8 @@ export const ProfileScreen: React.FC = () => {
   };
 
   // Sync delivery opt-in
-  const handleToggleDelivery = () => {
-    toggleDeliveryOptIn();
+  const handleToggleDelivery = async () => {
+    await toggleDeliveryOptIn();
     const userListing = MOCK_LISTINGS.find((l) => l.sellerRoom === (user.roomNumber || 'A304'));
     if (userListing) {
       userListing.deliveryOptIn = !user.deliveryOptIn;
@@ -67,14 +67,14 @@ export const ProfileScreen: React.FC = () => {
     setIsPickerModalOpen(true);
   };
 
-  const handleSaveHostelAndRoom = () => {
+  const handleSaveHostelAndRoom = async () => {
     if (!newRoom.trim()) return;
-    setHostelAndRoom(selectedHostel, newRoom.trim());
+    await setHostelAndRoom(selectedHostel, newRoom.trim());
     setIsPickerModalOpen(false);
   };
 
-  const handleLogout = () => {
-    resetUserProfile();
+  const handleLogout = async () => {
+    await resetUserProfile();
     navigate('/verify');
   };
 

@@ -35,7 +35,7 @@ export const HostelSetupScreen: React.FC = () => {
     setSelectedHostel(name);
   };
 
-  const handleEnterShop = () => {
+  const handleEnterShop = async () => {
     if (!isValid) {
       setPulseGrid(true);
       setTimeout(() => setPulseGrid(false), 500);
@@ -46,7 +46,7 @@ export const HostelSetupScreen: React.FC = () => {
       navigator.vibrate(50);
     }
 
-    setHostelAndRoom(selectedHostel as HostelName, roomNumber);
+    await setHostelAndRoom(selectedHostel as HostelName, roomNumber);
     navigate('/catalog');
   };
 

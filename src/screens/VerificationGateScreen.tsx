@@ -32,7 +32,7 @@ export const VerificationGateScreen: React.FC = () => {
     setIsNameManuallyEdited(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim();
 
@@ -49,20 +49,23 @@ export const VerificationGateScreen: React.FC = () => {
     }
 
     setIsSubmitting(true);
+    setErrorMsg('');
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await setVerifiedEmail(cleanEmail, finalName);
       setIsGranted(true);
-      setVerifiedEmail(cleanEmail, finalName);
-
       if (navigator.vibrate) {
         navigator.vibrate([30, 50, 30]);
       }
-
       setTimeout(() => {
         navigate('/setup');
       }, 700);
-    }, 1200);
+    } catch (err: any) {
+      console.error('Firebase authentication failed:', err);
+      setErrorMsg(err.message || 'Authentication failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isValidFormat = validatePecEmail(email);
