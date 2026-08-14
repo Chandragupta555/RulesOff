@@ -369,13 +369,24 @@ export const MOCK_LISTINGS: Listing[] = [
   },
 ];
 
+// Helper: Get listings dynamically projected for the user's active hostel
+export const getListingsForHostel = (userHostel: string, productId?: string): Listing[] => {
+  const targetHostel = userHostel || 'Shivalik';
+  return MOCK_LISTINGS.map((l) => ({
+    ...l,
+    hostel: targetHostel,
+  })).filter((l) => !productId || l.productId === productId);
+};
+
 // ─── Aggregation ─────────────────────────────────────────────────────
 export const getProductAggregates = (userHostel: string): ProductAggregate[] => {
+  const hostelListings = getListingsForHostel(userHostel);
+  console.log(`[INSTRUMENTATION] getProductAggregates called for userHostel="${userHostel}" (${hostelListings.length} total listings projected)`);
+
   return MOCK_PRODUCTS.map((product) => {
-    // Filter listings matching hostel, awake seller, and quantity > 0
-    const available = MOCK_LISTINGS.filter(
+    // Filter listings matching awake seller and quantity > 0
+    const available = hostelListings.filter(
       (l) =>
-        (l.hostel === userHostel || !userHostel) &&
         l.productId === product.id &&
         l.isSellerAwake &&
         l.quantity > 0
@@ -383,6 +394,7 @@ export const getProductAggregates = (userHostel: string): ProductAggregate[] => 
 
     const totalUnits = available.reduce((acc, curr) => acc + curr.quantity, 0);
     const awakeRoomCount = new Set(available.map((l) => l.sellerRoom)).size;
+    console.log(`[INSTRUMENTATION] Product "${product.name}": found ${available.length} available listings for hostel "${userHostel}", totalUnits=${totalUnits}`);
 
     // Calculate lowest price among available listings
     const prices = available.map((l) => l.price);
@@ -429,5 +441,14 @@ export const decrementListingQuantity = (listingId: string, qty: number): boolea
     return true;
   }
   return false;
+};
+
+export const syncUserListingWithProfile = (userRoom: string, isAwake: boolean, deliveryOptIn: boolean) => {
+  const targetRoom = userRoom || 'A304';
+  const userListing = MOCK_LISTINGS.find((l) => l.sellerRoom === targetRoom);
+  if (userListing) {
+    userListing.isSellerAwake = isAwake;
+    userListing.deliveryOptIn = deliveryOptIn;
+  }
 };
 

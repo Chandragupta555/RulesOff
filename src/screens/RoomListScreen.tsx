@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { MOCK_PRODUCTS, MOCK_LISTINGS, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
+import { MOCK_PRODUCTS, getListingsForHostel, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 
 export const RoomListScreen: React.FC = () => {
@@ -17,12 +17,9 @@ export const RoomListScreen: React.FC = () => {
   const userRoom = user.roomNumber || 'A304';
 
   // Available listings for this product where seller is awake and quantity > 0
-  const allListings = MOCK_LISTINGS.filter(
-    (l) =>
-      (l.hostel === userHostel || !userHostel) &&
-      l.productId === product.id &&
-      l.isSellerAwake &&
-      l.quantity > 0
+  const hostelListings = getListingsForHostel(userHostel, product.id);
+  const allListings = hostelListings.filter(
+    (l) => l.isSellerAwake && l.quantity > 0
   );
 
   // Apply delivery filter if selected, then sort by proximity

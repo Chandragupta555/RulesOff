@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { RequestItem, RequestStatus, RequestMethod } from '../types/request';
 import { useUser } from './UserContext';
-import { MOCK_LISTINGS, sortListingsByProximity, decrementListingQuantity } from '../data/mockCatalog';
+import { decrementListingQuantity } from '../data/mockCatalog';
+
+const SCHEMA_VERSION_KEY = 'rulesoff_schema_v2';
+const CURRENT_SCHEMA_VERSION = 'v2_simplified';
 
 interface RequestContextType {
   requests: RequestItem[];
@@ -17,14 +20,14 @@ interface RequestContextType {
   }) => RequestItem;
   acceptRequest: (requestId: string) => void;
   declineRequest: (requestId: string) => void;
+  cancelRequest: (requestId: string) => void;
   fulfillRequest: (requestId: string) => void;
-  fastForwardTimeout: (requestId: string) => void; // Testing helper to trigger timeout immediately
 }
 
 const RequestContext = createContext<RequestContextType | undefined>(undefined);
 
-// Initial Seeded Requests (Incoming to user A304)
-const SEEDED_REQUESTS: RequestItem[] = [
+// Clean Initial Seeded Requests for testing (Incoming to user A304)
+const INITIAL_SEEDED_REQUESTS: RequestItem[] = [
   {
     id: 'req-seed-1',
     buyerName: 'Rahul Verma',
@@ -39,9 +42,7 @@ const SEEDED_REQUESTS: RequestItem[] = [
     deliveryFee: 0,
     totalPrice: 24,
     status: 'pending',
-    createdAt: Date.now(),
-    responseDeadline: Date.now() + 5 * 60 * 1000,
-    rerouteChain: ['A304'],
+    createdAt: Date.now() - 5 * 60 * 1000,
   },
   {
     id: 'req-seed-2',
@@ -57,9 +58,7 @@ const SEEDED_REQUESTS: RequestItem[] = [
     deliveryFee: 5,
     totalPrice: 17,
     status: 'pending',
-    createdAt: Date.now() - 60 * 1000, // 1 minute ago
-    responseDeadline: Date.now() + 4 * 60 * 1000,
-    rerouteChain: ['A304'],
+    createdAt: Date.now() - 2 * 60 * 1000,
   },
 ];
 
@@ -69,99 +68,42 @@ export const RequestProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const userName = user.name || 'Rohit Sharma';
 
   const [requests, setRequests] = useState<RequestItem[]>(() => {
-    const saved = localStorage.getItem('rulesoff_requests');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved requests', e);
+    try {
+      const version = localStorage.getItem(SCHEMA_VERSION_KEY);
+      const saved = localStorage.getItem('rulesoff_requests');
+      console.log('[INSTRUMENTATION] RequestContext: Schema version in localStorage:', version, 'Raw saved requests:', saved);
+
+      if (version !== CURRENT_SCHEMA_VERSION) {
+        console.warn(`[INSTRUMENTATION] RequestContext: Schema mismatch! Stored version "${version}" !== expected "${CURRENT_SCHEMA_VERSION}". Purging stale cache.`);
+        localStorage.removeItem('rulesoff_requests');
+        localStorage.setItem(SCHEMA_VERSION_KEY, CURRENT_SCHEMA_VERSION);
+        return INITIAL_SEEDED_REQUESTS;
       }
+
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const isValid = Array.isArray(parsed) && parsed.every((r) => r.id && r.status);
+        console.log('[INSTRUMENTATION] RequestContext: Requests schema validation result:', isValid ? 'VALID' : 'INVALID', `(${parsed?.length || 0} items)`);
+        if (isValid) {
+          return parsed;
+        } else {
+          console.error('[INSTRUMENTATION] RequestContext: Invalid request structure detected, returning seeded defaults.');
+        }
+      }
+    } catch (e) {
+      console.error('[INSTRUMENTATION] RequestContext: Failed to parse saved requests:', e);
     }
-    return SEEDED_REQUESTS;
+    return INITIAL_SEEDED_REQUESTS;
   });
 
   useEffect(() => {
-    localStorage.setItem('rulesoff_requests', JSON.stringify(requests));
-  }, [requests]);
-
-  // Helper for Auto-Rerouting
-  const performAutoReroute = (targetReq: RequestItem, currentRequests: RequestItem[]): RequestItem[] => {
-    // Find candidate sellers from MOCK_LISTINGS
-    // Exclude buyer's own room and seller rooms already in rerouteChain
-    const candidateListings = MOCK_LISTINGS.filter(
-      (l) =>
-        l.productId === targetReq.productId &&
-        l.isSellerAwake &&
-        l.quantity >= targetReq.quantity &&
-        l.sellerRoom !== targetReq.buyerRoom &&
-        !targetReq.rerouteChain.includes(l.sellerRoom)
-    );
-
-    const sortedCandidates = sortListingsByProximity(candidateListings, targetReq.buyerRoom);
-
-    if (sortedCandidates.length > 0) {
-      const nextListing = sortedCandidates[0];
-      const newReqId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-
-      const newRequest: RequestItem = {
-        id: newReqId,
-        buyerName: targetReq.buyerName,
-        buyerRoom: targetReq.buyerRoom,
-        listingId: nextListing.id,
-        sellerRoom: nextListing.sellerRoom,
-        sellerName: nextListing.sellerName,
-        productId: targetReq.productId,
-        quantity: targetReq.quantity,
-        method: targetReq.method,
-        price: nextListing.price,
-        deliveryFee: targetReq.deliveryFee,
-        totalPrice: nextListing.price * targetReq.quantity + targetReq.deliveryFee,
-        status: 'pending',
-        createdAt: Date.now(),
-        responseDeadline: Date.now() + 5 * 60 * 1000,
-        rerouteChain: [...targetReq.rerouteChain, nextListing.sellerRoom],
-      };
-
-      // Mark target request as auto-rerouted linking to new request
-      const updatedOriginal: RequestItem = {
-        ...targetReq,
-        status: 'auto-rerouted',
-        reroutedToId: newReqId,
-      };
-
-      return currentRequests.map((r) => (r.id === targetReq.id ? updatedOriginal : r)).concat(newRequest);
-    } else {
-      // Exhausted all options
-      const exhaustedReq: RequestItem = {
-        ...targetReq,
-        status: 'expired',
-        isExhausted: true,
-      };
-      return currentRequests.map((r) => (r.id === targetReq.id ? exhaustedReq : r));
+    try {
+      localStorage.setItem('rulesoff_requests', JSON.stringify(requests));
+      console.log('[INSTRUMENTATION] RequestContext: Saved requests to localStorage:', requests.length, 'items');
+    } catch (e) {
+      console.error('[INSTRUMENTATION] RequestContext: Failed to save requests:', e);
     }
-  };
-
-  // Interval timer checking for expired pending requests every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setRequests((prev) => {
-        let hasChanges = false;
-        let nextState = [...prev];
-
-        for (const req of prev) {
-          if (req.status === 'pending' && now >= req.responseDeadline) {
-            hasChanges = true;
-            nextState = performAutoReroute(req, nextState);
-          }
-        }
-
-        return hasChanges ? nextState : prev;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [requests]);
 
   const createRequest = ({
     listingId,
@@ -198,8 +140,6 @@ export const RequestProvider: React.FC<{ children: React.ReactNode }> = ({ child
       totalPrice: price * quantity + deliveryFee,
       status: 'pending',
       createdAt: Date.now(),
-      responseDeadline: Date.now() + 5 * 60 * 1000,
-      rerouteChain: [sellerRoom],
     };
 
     setRequests((prev) => [newReq, ...prev]);
@@ -213,30 +153,23 @@ export const RequestProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const declineRequest = (requestId: string) => {
-    setRequests((prev) => {
-      const target = prev.find((r) => r.id === requestId);
-      if (!target) return prev;
-      // Perform auto-reroute immediately on decline
-      return performAutoReroute(target, prev);
-    });
+    setRequests((prev) =>
+      prev.map((r) => (r.id === requestId ? { ...r, status: 'declined' as RequestStatus } : r))
+    );
+  };
+
+  const cancelRequest = (requestId: string) => {
+    setRequests((prev) => prev.filter((r) => r.id !== requestId));
   };
 
   const fulfillRequest = (requestId: string) => {
     setRequests((prev) => {
       const target = prev.find((r) => r.id === requestId);
-      if (target) {
+      if (target && target.status !== 'fulfilled') {
         decrementListingQuantity(target.listingId, target.quantity);
         return prev.map((r) => (r.id === requestId ? { ...r, status: 'fulfilled' as RequestStatus } : r));
       }
       return prev;
-    });
-  };
-
-  const fastForwardTimeout = (requestId: string) => {
-    setRequests((prev) => {
-      const target = prev.find((r) => r.id === requestId);
-      if (!target) return prev;
-      return performAutoReroute(target, prev);
     });
   };
 
@@ -247,8 +180,8 @@ export const RequestProvider: React.FC<{ children: React.ReactNode }> = ({ child
         createRequest,
         acceptRequest,
         declineRequest,
+        cancelRequest,
         fulfillRequest,
-        fastForwardTimeout,
       }}
     >
       {children}

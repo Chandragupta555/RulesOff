@@ -149,16 +149,16 @@ export const RequestConfirmationScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 5-Minute Countdown Note Banner */}
+        {/* Informational Banner */}
         <div className="bg-[#1e1b18] border border-primary-container/40 rounded-2xl p-4 flex gap-3 items-start">
           <span className="material-symbols-outlined text-primary-container text-2xl mt-0.5">
-            timer
+            notifications_active
           </span>
           <p className="text-xs text-orange-200/90 leading-relaxed">
             <strong className="text-primary-container font-extrabold block mb-0.5">
-              5-Minute Response Window
+              Direct Room Request
             </strong>
-            Seller has 5 minutes to respond to your request. If they don't answer or decline, we'll <strong className="text-white">auto-match</strong> you with the next closest available room!
+            Seller in Room {listing.sellerRoom} will be notified immediately. You can view status anytime on your Requests screen.
           </p>
         </div>
 

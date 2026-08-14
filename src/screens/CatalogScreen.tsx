@@ -13,13 +13,11 @@ export const CatalogScreen: React.FC = () => {
 
   const aggregates = getProductAggregates(userHostel);
 
-  const handleCardClick = (productId: string, isAvailable: boolean) => {
+  const handleCardClick = (productId: string) => {
     if (navigator.vibrate) {
       navigator.vibrate(15);
     }
-    if (isAvailable) {
-      navigate(`/catalog/${productId}`);
-    }
+    navigate(`/catalog/${productId}`);
   };
 
   return (
@@ -53,10 +51,10 @@ export const CatalogScreen: React.FC = () => {
         </div>
 
         {/* Live Marquee Ticker */}
-        <div className="w-full bg-[#121212] border border-[#1F1F1F] rounded-xl py-2.5 px-4 flex items-center gap-3 overflow-hidden">
-          <div className="ticker-wrap h-5 flex items-center w-full">
+        <div className="w-full bg-[#121212] border border-[#1F1F1F] rounded-xl py-2.5 px-4 flex items-center overflow-hidden max-w-full">
+          <div className="ticker-wrap h-5 flex items-center w-full overflow-hidden max-w-full relative">
             <div className="ticker text-xs font-semibold text-primary-container uppercase tracking-wider neon-text-glow">
-              🔥 KARTIK JUST GRABBED MAGGI IN ROOM 212 • 🍿 ARJUN ADDED POPCORN TO THE SHELF • 🥤 REHA IS LOOKING FOR COKE • ⚡ SAMEER IS ONLINE
+              🔥 KARTIK JUST GRABBED MAGGI IN ROOM 212 • 🍿 ARJUN ADDED POPCORN TO THE SHELF • 🥤 REHA IS LOOKING FOR COKE • ⚡ SAMEER IS ONLINE • 🔥 KARTIK JUST GRABBED MAGGI IN ROOM 212 • 🍿 ARJUN ADDED POPCORN TO THE SHELF • 🥤 REHA IS LOOKING FOR COKE • ⚡ SAMEER IS ONLINE •
             </div>
           </div>
         </div>
@@ -71,11 +69,11 @@ export const CatalogScreen: React.FC = () => {
             return (
               <div
                 key={agg.product.id}
-                onClick={() => handleCardClick(agg.product.id, isAvailable)}
-                className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 ${
+                onClick={() => handleCardClick(agg.product.id)}
+                className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 cursor-pointer ${
                   isAvailable
-                    ? 'border-[#ff5f1f]/50 hover:border-[#ff5f1f] neon-glow active:scale-95 cursor-pointer'
-                    : 'border-[#1F1F1F] opacity-60'
+                    ? 'border-[#ff5f1f]/50 hover:border-[#ff5f1f] neon-glow active:scale-95'
+                    : 'border-[#1F1F1F] opacity-75 hover:border-primary-container/30'
                 }`}
               >
                 {/* Badge Tag */}

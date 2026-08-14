@@ -10,6 +10,7 @@ export interface UserProfile {
   reliabilityScore: number;
   isVerified: boolean;
   hasCompletedSetup: boolean;
+  lastHostelChangeDate?: number; // Timestamp ms of last hostel change
 }
 
 export interface UserContextType {

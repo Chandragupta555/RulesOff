@@ -9,6 +9,8 @@ import { CatalogScreen } from './screens/CatalogScreen';
 import { RoomListScreen } from './screens/RoomListScreen';
 import { RequestConfirmationScreen } from './screens/RequestConfirmationScreen';
 import { RequestsScreen } from './screens/RequestsScreen';
+import { LeaderboardScreen } from './screens/LeaderboardScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
 
 // Protected Route Guard for Setup
 const RequireVerification: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -73,6 +75,22 @@ const AppRoutes: React.FC = () => {
         element={
           <RequireSetupComplete>
             <RequestsScreen />
+          </RequireSetupComplete>
+        }
+      />
+      <Route
+        path="/rank"
+        element={
+          <RequireSetupComplete>
+            <LeaderboardScreen />
+          </RequireSetupComplete>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <RequireSetupComplete>
+            <ProfileScreen />
           </RequireSetupComplete>
         }
       />

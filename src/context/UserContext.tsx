@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserContextType, HostelName } from '../types/user';
+import { syncUserListingWithProfile } from '../data/mockCatalog';
 
 const INITIAL_USER: UserProfile = {
   name: '',
@@ -58,11 +59,23 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      console.log('[INSTRUMENTATION] UserContext: Raw localStorage value:', saved);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        const isValid =
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          typeof parsed.name === 'string' &&
+          typeof parsed.isVerified === 'boolean';
+        console.log('[INSTRUMENTATION] UserContext: Schema validation result:', isValid ? 'VALID' : 'INVALID', parsed);
+        if (isValid) {
+          return parsed;
+        } else {
+          console.error('[INSTRUMENTATION] UserContext: Corrupted/invalid schema detected in localStorage, resetting to default.');
+        }
       }
     } catch (e) {
-      console.error('Failed to read user profile from localStorage', e);
+      console.error('[INSTRUMENTATION] UserContext: Failed to read/parse user profile from localStorage:', e);
     }
     return INITIAL_USER;
   });
@@ -70,8 +83,10 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(user));
+      syncUserListingWithProfile(user.roomNumber, user.isAwake, user.deliveryOptIn);
+      console.log('[INSTRUMENTATION] UserContext: Saved updated user profile to localStorage & synced listing:', user);
     } catch (e) {
-      console.error('Failed to save user profile to localStorage', e);
+      console.error('[INSTRUMENTATION] UserContext: Failed to save user profile to localStorage', e);
     }
   }, [user]);
 
@@ -85,11 +100,15 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const setHostelAndRoom = (hostel: HostelName, roomNumber: string) => {
+    const raw = roomNumber.trim().toUpperCase();
+    const match = raw.match(/([A-Z]\d{3})/);
+    const cleaned = match ? match[1] : raw;
     setUser((prev) => ({
       ...prev,
       hostel,
-      roomNumber: roomNumber.trim(),
+      roomNumber: cleaned,
       hasCompletedSetup: true,
+      lastHostelChangeDate: Date.now(),
     }));
   };
 

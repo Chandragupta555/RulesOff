@@ -1,27 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useRequests } from '../context/RequestContext';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
-import { RequestItem } from '../types/request';
 
 export const RequestsScreen: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get('tab') as 'incoming' | 'outgoing') || 'incoming';
   const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>(initialTab);
 
   const { user } = useUser();
-  const { requests, acceptRequest, declineRequest, fulfillRequest, fastForwardTimeout } = useRequests();
+  const { requests, acceptRequest, declineRequest, cancelRequest, fulfillRequest } = useRequests();
 
   const userRoom = user.roomNumber || 'A304';
-
-  // Live timer tick every second for countdown UI
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleTabChange = (tab: 'incoming' | 'outgoing') => {
     setActiveTab(tab);
@@ -33,13 +26,6 @@ export const RequestsScreen: React.FC = () => {
   const outgoingRequests = requests.filter((r) => r.buyerRoom === userRoom);
 
   const activeIncomingCount = incomingRequests.filter((r) => r.status === 'pending').length;
-
-  const formatCountdown = (deadline: number) => {
-    const diff = Math.max(0, Math.floor((deadline - now) / 1000));
-    const mins = Math.floor(diff / 60);
-    const secs = diff % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-  };
 
   return (
     <div className="font-sans min-h-screen w-full flex flex-col select-none bg-[#121414] text-[#e2e2e2] pb-28">
@@ -100,6 +86,7 @@ export const RequestsScreen: React.FC = () => {
                 const isPending = req.status === 'pending';
                 const isAccepted = req.status === 'accepted';
                 const isFulfilled = req.status === 'fulfilled';
+                const isDeclined = req.status === 'declined';
 
                 return (
                   <div
@@ -121,17 +108,6 @@ export const RequestsScreen: React.FC = () => {
                           {req.method === 'delivery' ? '🚀 Delivery requested' : '🏃 Pickup requested'}
                         </p>
                       </div>
-
-                      {/* Live Timer if pending */}
-                      {isPending && (
-                        <div className="text-right flex flex-col items-end">
-                          <span className="text-xs font-mono font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
-                            <span className="material-symbols-outlined text-xs">timer</span>
-                            {formatCountdown(req.responseDeadline)}
-                          </span>
-                          <span className="text-[10px] text-on-surface-variant mt-1">Remaining</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Product Details */}
@@ -196,10 +172,10 @@ export const RequestsScreen: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Rerouted / Declined State */}
-                    {req.status === 'auto-rerouted' && (
-                      <div className="text-xs text-on-surface-variant bg-[#1a1c1c] p-2.5 rounded-xl border border-[#2a2c2c] italic">
-                        Decline/Timeout: Request auto-rerouted to another seller.
+                    {/* Declined State */}
+                    {isDeclined && (
+                      <div className="text-xs text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/30 font-semibold">
+                        You declined this request.
                       </div>
                     )}
                   </div>
@@ -225,8 +201,7 @@ export const RequestsScreen: React.FC = () => {
                 const product = MOCK_PRODUCTS.find((p) => p.id === req.productId) || MOCK_PRODUCTS[0];
                 const isPending = req.status === 'pending';
                 const isAccepted = req.status === 'accepted';
-                const isRerouted = req.status === 'auto-rerouted';
-                const isExhausted = req.isExhausted;
+                const isDeclined = req.status === 'declined';
                 const isFulfilled = req.status === 'fulfilled';
 
                 return (
@@ -248,9 +223,9 @@ export const RequestsScreen: React.FC = () => {
                       {/* Status Badges */}
                       <div>
                         {isPending && (
-                          <span className="text-xs font-mono font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
-                            <span className="material-symbols-outlined text-xs">timer</span>
-                            {formatCountdown(req.responseDeadline)}
+                          <span className="text-xs font-semibold text-orange-400 bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 rounded-full flex items-center gap-1 animate-pulse">
+                            <span className="material-symbols-outlined text-xs">hourglass_empty</span>
+                            Pending
                           </span>
                         )}
                         {isAccepted && (
@@ -258,14 +233,14 @@ export const RequestsScreen: React.FC = () => {
                             Accepted!
                           </span>
                         )}
+                        {isDeclined && (
+                          <span className="text-xs font-bold text-red-400 bg-red-500/15 border border-red-500/30 px-2.5 py-1 rounded-full">
+                            Declined
+                          </span>
+                        )}
                         {isFulfilled && (
                           <span className="text-xs font-bold text-green-400 bg-green-500/15 border border-green-500/30 px-2.5 py-1 rounded-full">
                             Completed ✓
-                          </span>
-                        )}
-                        {isExhausted && (
-                          <span className="text-xs font-bold text-red-400 bg-red-500/15 border border-red-500/30 px-2.5 py-1 rounded-full">
-                            Exhausted
                           </span>
                         )}
                       </div>
@@ -288,8 +263,8 @@ export const RequestsScreen: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Detailed Live Status Message Banner */}
-                    <div className="mt-0.5">
+                    {/* Detailed Status Message & Actions */}
+                    <div className="mt-0.5 flex flex-col gap-2">
                       {isPending && (
                         <div className="bg-[#1e1b18] border border-orange-500/30 rounded-xl p-3 flex flex-col gap-2">
                           <div className="flex items-center gap-2 text-xs font-bold text-orange-300">
@@ -298,17 +273,12 @@ export const RequestsScreen: React.FC = () => {
                             </span>
                             <span>Waiting for response from Room {req.sellerRoom}...</span>
                           </div>
-                          <p className="text-[11px] text-on-surface-variant">
-                            If they don't respond in {formatCountdown(req.responseDeadline)}, we'll auto-match you with the next room!
-                          </p>
-                          {/* Fast-forward test button for reviewer */}
                           <button
                             type="button"
-                            onClick={() => fastForwardTimeout(req.id)}
-                            className="mt-1 py-1.5 px-3 rounded-lg bg-[#2b241c] hover:bg-orange-500/20 text-primary-container border border-primary-container/40 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer self-start flex items-center gap-1"
+                            onClick={() => cancelRequest(req.id)}
+                            className="mt-1 py-1.5 px-3 rounded-lg bg-[#241a1a] hover:bg-red-950/60 text-red-400 border border-red-500/40 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer self-start"
                           >
-                            <span className="material-symbols-outlined text-xs">fast_forward</span>
-                            <span>Simulate 5m Timeout / Reroute</span>
+                            Cancel Request
                           </button>
                         </div>
                       )}
@@ -325,23 +295,22 @@ export const RequestsScreen: React.FC = () => {
                         </div>
                       )}
 
-                      {isRerouted && (
-                        <div className="bg-[#1e1a22] border border-purple-500/30 rounded-xl p-3 flex items-start gap-2">
-                          <span className="material-symbols-outlined text-purple-400 text-lg">alt_route</span>
-                          <p className="text-xs text-purple-200">
-                            <strong className="font-extrabold text-purple-300 block">Auto-Rerouted</strong>
-                            Room {req.sellerRoom} didn't answer in time. Automatically redirected your request to the next closest seller!
-                          </p>
-                        </div>
-                      )}
-
-                      {isExhausted && (
-                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
-                          <span className="material-symbols-outlined text-red-400 text-lg">error_outline</span>
-                          <p className="text-xs text-red-200">
-                            <strong className="font-extrabold text-red-400 block">No one else has this right now</strong>
-                            All available awake sellers for {product.name} in your hostel have been attempted.
-                          </p>
+                      {isDeclined && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex flex-col gap-2">
+                          <div className="flex items-start gap-2">
+                            <span className="material-symbols-outlined text-red-400 text-lg">block</span>
+                            <p className="text-xs text-red-200">
+                              <strong className="font-extrabold text-red-400 block">Request Declined</strong>
+                              Room {req.sellerRoom} declined this request.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/catalog/${req.productId}`)}
+                            className="py-2 px-3 rounded-xl bg-primary-container/20 text-primary-container border border-primary-container/40 text-xs font-bold uppercase tracking-wider hover:bg-primary-container/30 transition-all text-center"
+                          >
+                            Try Another Room from Shelf
+                          </button>
                         </div>
                       )}
                     </div>
