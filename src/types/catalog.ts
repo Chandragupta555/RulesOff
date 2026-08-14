@@ -1,7 +1,17 @@
+export type ProductCategory =
+  | 'Instant Food'
+  | 'Chips & Namkeen'
+  | 'Biscuits & Cookies'
+  | 'Chocolates & Sweets'
+  | 'Cold Drinks & Juices'
+  | 'Energy Drinks'
+  | 'Dairy & Milk-based'
+  | 'Ice Cream & Desserts';
+
 export interface Product {
   id: string;
   name: string;
-  category: 'snack' | 'drink' | 'instant';
+  category: ProductCategory;
   mrp: number; // Maximum Retail Price (INR)
   imageUrl: string;
   iconName: string;

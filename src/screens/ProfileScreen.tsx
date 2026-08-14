@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { HostelName } from '../types/user';
-import { MOCK_PRODUCTS } from '../data/mockCatalog';
+import { MOCK_PRODUCTS, PRODUCT_CATEGORIES } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 import {
   FirestoreListing,
@@ -468,13 +468,25 @@ export const ProfileScreen: React.FC = () => {
                     if (p) setListingPrice(p.mrp);
                   }}
                   disabled={!!editingListing}
-                  className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-3 text-white font-sans text-sm focus:outline-none focus:border-primary-container"
+                  className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-3 text-white font-sans text-sm focus:outline-none focus:border-primary-container cursor-pointer"
                 >
-                  {MOCK_PRODUCTS.map((prod) => (
-                    <option key={prod.id} value={prod.id}>
-                      {prod.name} (MRP ₹{prod.mrp})
-                    </option>
-                  ))}
+                  {PRODUCT_CATEGORIES.map((category) => {
+                    const groupItems = MOCK_PRODUCTS.filter((p) => p.category === category);
+                    if (groupItems.length === 0) return null;
+                    return (
+                      <optgroup
+                        key={category}
+                        label={category}
+                        className="bg-[#121414] text-primary-container font-extrabold"
+                      >
+                        {groupItems.map((prod) => (
+                          <option key={prod.id} value={prod.id} className="bg-[#121414] text-white font-normal">
+                            {prod.name} (MRP ₹{prod.mrp})
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
                 </select>
               </div>
 

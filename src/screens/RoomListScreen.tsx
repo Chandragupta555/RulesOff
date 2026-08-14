@@ -49,6 +49,14 @@ export const RoomListScreen: React.FC = () => {
       deliveryFee: l.deliveryFee,
     }));
 
+  // Check if active stock exists for this product in hostel, but ALL of it belongs to current user
+  const activeProductListingsInHostel = hostelListings.filter(
+    (l) => l.productId === product.id && l.isSellerAwake && l.quantity > 0
+  );
+  const isOnlyUserStocking =
+    activeProductListingsInHostel.length > 0 &&
+    activeProductListingsInHostel.every((l) => user.uid && l.sellerUid === user.uid);
+
   // Apply delivery filter if selected, then sort by proximity
   const deliveryFiltered =
     deliveryFilter === 'delivery'
@@ -163,12 +171,16 @@ export const RoomListScreen: React.FC = () => {
         {filteredListings.length === 0 ? (
           <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3">
             <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-              sentiment_dissatisfied
+              {isOnlyUserStocking ? 'storefront' : 'sentiment_dissatisfied'}
             </span>
             <div>
-              <h4 className="text-sm font-bold text-white">No Sellers Found</h4>
-              <p className="text-xs text-on-surface-variant mt-1">
-                No rooms in {userHostel} are currently selling {product.name} matching your filter.
+              <h4 className="text-sm font-bold text-white">
+                {isOnlyUserStocking ? 'You Are The Only Seller' : 'No Sellers Found'}
+              </h4>
+              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                {isOnlyUserStocking
+                  ? "You're the only one stocking this right now — list more or wait for another seller!"
+                  : `No rooms in ${userHostel} are currently selling ${product.name} matching your filter.`}
               </p>
             </div>
           </div>

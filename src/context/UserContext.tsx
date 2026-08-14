@@ -4,7 +4,6 @@ import { auth } from '../firebase/config';
 import { signInWithGoogle, signOutUser, handleRedirectAuthResult } from '../firebase/auth';
 import { subscribeToUserProfile, saveUserProfileDoc, getUserProfileDoc } from '../firebase/users';
 import { UserProfile, UserContextType, HostelName } from '../types/user';
-import { syncUserListingWithProfile } from '../data/mockCatalog';
 
 const INITIAL_USER: UserProfile = {
   uid: '',
@@ -94,11 +93,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
               name: firestoreProfile.name || firebaseUser.displayName || parseNameFromPecEmail(email),
               isVerified: true,
             });
-            syncUserListingWithProfile(
-              firestoreProfile.roomNumber || '',
-              firestoreProfile.isAwake ?? true,
-              firestoreProfile.deliveryOptIn ?? true
-            );
           } else {
             console.log('[Firestore Users] No user doc exists yet. Will be created on setup.');
             const initialDoc: UserProfile = {
