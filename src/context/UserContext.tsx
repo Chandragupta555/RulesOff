@@ -176,7 +176,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signInWithGoogleAccount();
   };
 
-  const setHostelAndRoom = async (hostel: HostelName, roomNumber: string) => {
+  const setHostelAndRoom = async (
+    hostel: HostelName,
+    roomNumber: string,
+    isActualHostelChange: boolean = false
+  ) => {
     const raw = roomNumber.trim().toUpperCase();
     const match = raw.match(/([A-Z]\d{3})/);
     const cleaned = match ? match[1] : raw;
@@ -185,8 +189,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hostel,
       roomNumber: cleaned,
       hasCompletedSetup: true,
-      lastHostelChangeDate: Date.now(),
     };
+
+    if (isActualHostelChange) {
+      updated.lastHostelChangeDate = Date.now();
+    }
 
     setUser((prev) => ({ ...prev, ...updated }));
     if (user.uid) {

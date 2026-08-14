@@ -90,19 +90,21 @@ export const ProfileScreen: React.FC = () => {
     await toggleDeliveryOptIn();
   };
 
-  const handleConfirmHostelChange = () => {
-    setIsConfirmModalOpen(false);
-    setIsPickerModalOpen(true);
+  const handleInitiateLocationSave = () => {
+    if (!newRoom.trim()) return;
+    setIsPickerModalOpen(false);
+    setIsConfirmModalOpen(true);
   };
 
-  const handleSaveHostelAndRoom = async () => {
+  const handleConfirmHostelChange = async () => {
     if (!newRoom.trim()) return;
     const roomClean = newRoom.trim().toUpperCase();
-    await setHostelAndRoom(selectedHostel, roomClean);
+    const isHostelChanged = selectedHostel !== user.hostel;
+    await setHostelAndRoom(selectedHostel, roomClean, isHostelChanged);
     if (user.uid) {
       await updateSellerDetailsInListings(user.uid, user.name, roomClean, selectedHostel);
     }
-    setIsPickerModalOpen(false);
+    setIsConfirmModalOpen(false);
   };
 
   const handleLogout = async () => {
@@ -379,9 +381,16 @@ export const ProfileScreen: React.FC = () => {
               <span className="text-base font-extrabold text-white block">
                 {user.hostel || 'Shivalik'} Hostel
               </span>
-              <span className="text-xs text-primary-container font-bold">
-                Room {user.roomNumber || 'A304'}
-              </span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs text-primary-container font-bold">
+                  Room {user.roomNumber || 'A304'}
+                </span>
+                {!isCooldownActive && (
+                  <span className="text-[10px] text-on-surface-variant/70 italic">
+                    • Changes lock for 14 days
+                  </span>
+                )}
+              </div>
             </div>
 
             {isCooldownActive ? (
@@ -395,7 +404,11 @@ export const ProfileScreen: React.FC = () => {
             ) : (
               <button
                 type="button"
-                onClick={() => setIsConfirmModalOpen(true)}
+                onClick={() => {
+                  setSelectedHostel((user.hostel as HostelName) || 'Shivalik');
+                  setNewRoom(user.roomNumber || '');
+                  setIsPickerModalOpen(true);
+                }}
                 className="bg-primary-container/10 border border-primary-container/30 text-primary-container hover:bg-primary-container hover:text-black px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
               >
                 CHANGE HOSTEL
@@ -577,38 +590,6 @@ export const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      {/* CONFIRMATION MODAL BEFORE PICKER */}
-      {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#141616] border border-[#2a2c2c] rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 text-center animate-scale-in">
-            <span className="material-symbols-outlined text-4xl text-amber-400 mx-auto">warning</span>
-
-            <h3 className="text-lg font-extrabold text-white">14-Day Cooldown Notice</h3>
-
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              Once you change your hostel, you will be locked to that hostel for <strong>14 days</strong> before you can change again.
-            </p>
-
-            <div className="flex gap-3 mt-2">
-              <button
-                type="button"
-                onClick={() => setIsConfirmModalOpen(false)}
-                className="flex-1 bg-[#252828] text-on-surface font-bold text-xs py-3 rounded-full uppercase tracking-wider"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmHostelChange}
-                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow"
-              >
-                Proceed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* HOSTEL & ROOM PICKER MODAL */}
       {isPickerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -625,7 +606,7 @@ export const ProfileScreen: React.FC = () => {
                 <select
                   value={selectedHostel}
                   onChange={(e) => setSelectedHostel(e.target.value as HostelName)}
-                  className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-3 text-white font-sans text-sm focus:outline-none focus:border-primary-container"
+                  className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-3 text-white font-sans text-sm focus:outline-none focus:border-primary-container cursor-pointer"
                 >
                   {HOSTEL_OPTIONS.map((h) => (
                     <option key={h} value={h}>
@@ -653,16 +634,50 @@ export const ProfileScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsPickerModalOpen(false)}
-                className="flex-1 bg-[#252828] text-on-surface font-bold text-xs py-3 rounded-full uppercase tracking-wider"
+                className="flex-1 bg-[#252828] text-on-surface font-bold text-xs py-3 rounded-full uppercase tracking-wider hover:bg-[#323535] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleSaveHostelAndRoom}
-                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow"
+                onClick={handleInitiateLocationSave}
+                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow cursor-pointer"
               >
                 Save Location
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EXPLICIT CONFIRMATION MODAL BEFORE COMMITTING LOCATION CHANGE */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#141616] border border-amber-500/40 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 text-center animate-scale-in shadow-2xl">
+            <span className="material-symbols-outlined text-4xl text-amber-400 mx-auto">warning</span>
+
+            <h3 className="text-base font-extrabold text-white leading-snug">
+              Change to {selectedHostel} Hostel, Room {newRoom.trim().toUpperCase()}?
+            </h3>
+
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              You can only change your hostel once every 14 days after this. Make sure this is correct before confirming.
+            </p>
+
+            <div className="flex gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="flex-1 bg-[#252828] text-on-surface font-bold text-xs py-3 rounded-full uppercase tracking-wider hover:bg-[#323535] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmHostelChange}
+                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow cursor-pointer active:scale-95 transition-all"
+              >
+                Confirm Change
               </button>
             </div>
           </div>

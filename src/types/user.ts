@@ -11,7 +11,7 @@ export interface UserProfile {
   reliabilityScore: number;
   isVerified: boolean;
   hasCompletedSetup: boolean;
-  lastHostelChangeDate?: number; // Timestamp ms of last hostel change
+  lastHostelChangeDate?: number; // Timestamp ms of last hostel change (only set on subsequent hostel changes, NOT onboarding)
 }
 
 export interface UserContextType {
@@ -19,7 +19,7 @@ export interface UserContextType {
   loading: boolean;
   signInWithGoogleAccount: () => Promise<UserProfile>;
   setVerifiedEmail: (email: string, parsedName: string) => Promise<void>;
-  setHostelAndRoom: (hostel: HostelName, roomNumber: string) => Promise<void>;
+  setHostelAndRoom: (hostel: HostelName, roomNumber: string, isActualHostelChange?: boolean) => Promise<void>;
   toggleAwakeStatus: () => Promise<void>;
   toggleDeliveryOptIn: () => Promise<void>;
   resetUserProfile: () => Promise<void>;
