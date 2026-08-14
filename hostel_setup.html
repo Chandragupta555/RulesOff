@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RulesOff - Hostel Setup</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#1c1b1b",
+                      "on-tertiary-fixed-variant": "#474646",
+                      "surface-variant": "#333535",
+                      "surface-dim": "#121414",
+                      "on-primary-fixed": "#390c00",
+                      "surface-container": "#1e2020",
+                      "inverse-primary": "#ab3600",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#e5e2e1",
+                      "error": "#ffb4ab",
+                      "surface": "#121414",
+                      "on-primary": "#5c1900",
+                      "inverse-surface": "#e2e2e2",
+                      "primary-fixed-dim": "#ffb59c",
+                      "on-surface-variant": "#e3bfb3",
+                      "on-primary-fixed-variant": "#832700",
+                      "on-secondary": "#313030",
+                      "inverse-on-surface": "#2f3131",
+                      "surface-container-highest": "#333535",
+                      "primary-fixed": "#ffdbcf",
+                      "on-surface": "#e2e2e2",
+                      "secondary": "#c8c6c5",
+                      "outline": "#aa897f",
+                      "primary-container": "#ff5f1f",
+                      "surface-bright": "#38393a",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "surface-container-lowest": "#0d0e0f",
+                      "error-container": "#93000a",
+                      "secondary-fixed": "#e5e2e1",
+                      "on-tertiary": "#313030",
+                      "on-error": "#690005",
+                      "on-background": "#e2e2e2",
+                      "on-tertiary-container": "#2d2c2c",
+                      "outline-variant": "#5b4138",
+                      "tertiary-fixed-dim": "#c9c6c5",
+                      "on-secondary-fixed-variant": "#474646",
+                      "tertiary": "#c9c6c5",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "secondary-container": "#4a4949",
+                      "surface-container-low": "#1a1c1c",
+                      "primary": "#ffb59c",
+                      "surface-tint": "#ffb59c",
+                      "on-secondary-container": "#bab8b7",
+                      "on-primary-container": "#561700",
+                      "background": "#121414",
+                      "surface-container-high": "#282a2b",
+                      "tertiary-container": "#959393"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "container-padding": "20px",
+                      "section-gap": "32px",
+                      "base": "8px",
+                      "element-gap": "16px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Lexend"
+                      ],
+                      "headline-xl": [
+                              "Lexend"
+                      ],
+                      "headline-lg": [
+                              "Lexend"
+                      ],
+                      "label-lg": [
+                              "Lexend"
+                      ],
+                      "body-lg": [
+                              "Lexend"
+                      ],
+                      "label-sm": [
+                              "Lexend"
+                      ],
+                      "headline-md": [
+                              "Lexend"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-xl": [
+                              "40px",
+                              {
+                                      "lineHeight": "48px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "38px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "30px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #050505;
+        }
+        .hostel-card.active {
+            border-color: #ff5f1f;
+            box-shadow: 0 0 15px rgba(255, 95, 31, 0.2);
+            background-color: rgba(255, 95, 31, 0.05);
+        }
+        .hostel-card.active .material-symbols-outlined {
+            color: #ff5f1f;
+        }
+        .input-glow:focus-within {
+            border-color: #ff5f1f;
+            box-shadow: inset 0 0 10px rgba(255, 95, 31, 0.1);
+        }
+      </style>
+</head>
+<body class="text-on-background min-h-screen flex flex-col font-body-md overflow-x-hidden selection:bg-primary-container selection:text-black pb-24">
+<!-- Top App Bar - No navigation elements since this is a setup screen -->
+<header class="w-full flex justify-center items-center h-16 pt-8 pb-4">
+<span class="font-headline-md text-headline-md font-extrabold text-primary drop-shadow-[0_0_10px_rgba(255,95,31,0.5)] tracking-widest uppercase">RULESOFF</span>
+</header>
+<main class="flex-grow px-container-padding pt-section-gap max-w-md mx-auto w-full flex flex-col gap-section-gap">
+<!-- Header -->
+<div class="text-center space-y-base">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">WHERE DO YOU STAY?</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Select your hostel to view the local midnight menu.</p>
+</div>
+<!-- Hostel Grid -->
+<div class="grid grid-cols-2 gap-element-gap" id="hostel-grid">
+<!-- Shivalik -->
+<button class="hostel-card bg-surface-dim border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:border-surface-variant active:scale-95 text-center relative overflow-hidden group min-h-[120px]"><div class="absolute top-2 right-2 bg-primary-container/10 px-2 py-1 rounded text-[10px] text-primary-container font-bold uppercase tracking-wider z-10">Boys</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface opacity-50"></div>
+<span class="material-symbols-outlined text-3xl text-on-surface-variant transition-colors group-hover:text-primary z-10" data-icon="location_city">location_city</span>
+<span class="font-label-lg text-label-lg text-on-surface z-10">Shivalik</span>
+</button>
+<!-- Aravali -->
+<button class="hostel-card bg-surface-dim border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:border-surface-variant active:scale-95 text-center relative overflow-hidden group min-h-[120px]"><div class="absolute top-2 right-2 bg-primary-container/10 px-2 py-1 rounded text-[10px] text-primary-container font-bold uppercase tracking-wider z-10">Boys</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface opacity-50"></div>
+<span class="material-symbols-outlined text-3xl text-on-surface-variant transition-colors group-hover:text-primary z-10" data-icon="forest">forest</span>
+<span class="font-label-lg text-label-lg text-on-surface z-10">Aravali</span>
+</button>
+<!-- Kurukshetra -->
+<button class="hostel-card bg-surface-dim border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:border-surface-variant active:scale-95 text-center relative overflow-hidden group min-h-[120px]"><div class="absolute top-2 right-2 bg-primary-container/10 px-2 py-1 rounded text-[10px] text-primary-container font-bold uppercase tracking-wider z-10">Boys</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface opacity-50"></div>
+<span class="material-symbols-outlined text-3xl text-on-surface-variant transition-colors group-hover:text-primary z-10" data-icon="flag">flag</span>
+<span class="font-label-lg text-label-lg text-on-surface z-10">Kurukshetra</span>
+</button>
+<!-- Himalaya -->
+<button class="hostel-card bg-surface-dim border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:border-surface-variant active:scale-95 text-center relative overflow-hidden group min-h-[120px]">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface opacity-50"></div>
+<div class="absolute top-2 right-2 bg-primary-container/10 px-2 py-1 rounded text-[10px] text-primary-container font-bold uppercase tracking-wider z-10">Boys</div>
+<span class="material-symbols-outlined text-3xl text-on-surface-variant transition-colors group-hover:text-primary z-10" data-icon="landscape">landscape</span>
+<span class="font-label-lg text-label-lg text-on-surface z-10">Himalaya</span>
+</button>
+<!-- Kalpana Chawala -->
+<button class="hostel-card bg-surface-dim border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:border-surface-variant active:scale-95 text-center relative overflow-hidden group min-h-[120px]"><div class="absolute top-2 right-2 bg-primary-container/10 px-2 py-1 rounded text-[10px] text-primary-container font-bold uppercase tracking-wider z-10">Girls</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface opacity-50"></div>
+<span class="material-symbols-outlined text-3xl text-on-surface-variant transition-colors group-hover:text-primary z-10" data-icon="rocket_launch">rocket_launch</span>
+<span class="font-label-lg text-label-lg text-on-surface z-10 leading-tight">Kalpana<br/>Chawala</span>
+</button>
+<!-- Vindhya -->
+<button class="hostel-card bg-surface-dim border border-[#1F1F1F] rounded-DEFAULT p-4 flex flex-col items-center justify-center gap-3 transition-all duration-200 hover:border-surface-variant active:scale-95 text-center relative overflow-hidden group min-h-[120px]">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-surface opacity-50"></div>
+<div class="absolute top-2 right-2 bg-primary-container/10 px-2 py-1 rounded text-[10px] text-primary-container font-bold uppercase tracking-wider z-10">Girls</div>
+<span class="material-symbols-outlined text-3xl text-on-surface-variant transition-colors group-hover:text-primary z-10" data-icon="water">water</span>
+<span class="font-label-lg text-label-lg text-on-surface z-10">Vindhya</span>
+</button>
+</div>
+<!-- Room Input -->
+<div class="flex flex-col gap-base mt-8">
+<label class="font-label-lg text-label-lg text-on-surface" for="room-number">ROOM NUMBER</label>
+<div class="relative w-full input-glow transition-all duration-200 rounded-[24px] border border-surface-variant bg-[#1A1A1A]/50">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant" data-icon="door_front">door_front</span>
+<input class="w-full bg-transparent border-none rounded-[24px] py-4 pl-12 pr-4 font-body-lg text-body-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-0" id="room-number" placeholder="e.g. 402" type="text"/>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant/70 text-center mt-2 px-4 leading-relaxed">
+                This locks your local shelf — you can change it later from Settings if you switch hostels.
+            </p>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<div class="fixed bottom-0 left-0 w-full p-container-padding bg-gradient-to-t from-[#050505] via-[#050505] to-transparent pt-12 z-40 flex justify-center pb-12">
+<button class="w-full max-w-md bg-primary-container text-black font-headline-md text-headline-md uppercase tracking-wider rounded-DEFAULT py-4 px-6 shadow-[0_4px_20px_rgba(255,95,31,0.3)] hover:shadow-[0_4px_25px_rgba(255,95,31,0.5)] active:scale-95 transition-all duration-150 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed" id="enter-shop-btn">
+            ENTER THE SHOP
+            <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<script>
+        const cards = document.querySelectorAll('.hostel-card');
+        const roomInput = document.getElementById('room-number');
+        const enterBtn = document.getElementById('enter-shop-btn');
+        let selectedHostel = false;
+
+        function checkFormValidity() {
+            if (selectedHostel && roomInput.value.trim().length > 0) {
+                enterBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                enterBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Haptic feedback simulation (requires secure context and compatible device in real world)
+                if (window.navigator && window.navigator.vibrate) {
+                    navigator.vibrate(10);
+                }
+                
+                cards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                selectedHostel = true;
+                checkFormValidity();
+            });
+        });
+
+        roomInput.addEventListener('input', checkFormValidity);
+
+        enterBtn.addEventListener('click', (e) => {
+            if (enterBtn.classList.contains('cursor-not-allowed')) {
+                e.preventDefault();
+                // Add a gentle shake animation to highlight missing fields
+                if (!selectedHostel) {
+                    document.getElementById('hostel-grid').classList.add('animate-pulse');
+                    setTimeout(() => document.getElementById('hostel-grid').classList.remove('animate-pulse'), 500);
+                }
+            } else {
+                if (window.navigator && window.navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+                // Proceed to next screen logic here
+            }
+        });
+    </script>
+</body></html>
