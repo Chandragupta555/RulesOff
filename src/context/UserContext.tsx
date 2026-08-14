@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { authenticatePecUser, signOutUser } from '../firebase/auth';
-import { subscribeToUserProfile, saveUserProfileDoc } from '../firebase/users';
+import { signInWithGoogle, signOutUser, handleRedirectAuthResult } from '../firebase/auth';
+import { subscribeToUserProfile, saveUserProfileDoc, getUserProfileDoc } from '../firebase/users';
 import { UserProfile, UserContextType, HostelName } from '../types/user';
 import { syncUserListingWithProfile } from '../data/mockCatalog';
 
@@ -23,8 +23,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const validatePecEmail = (email: string): boolean => {
   if (!email) return false;
-  const pecRegex = /^[a-zA-Z0-9._-]+bt\d{2}[a-zA-Z]+@pec\.edu\.in$/i;
-  return pecRegex.test(email.trim());
+  return email.trim().toLowerCase().endsWith('@pec.edu.in');
 };
 
 export const parseNameFromPecEmail = (email: string): string => {
@@ -60,6 +59,12 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let docUnsubscribe: (() => void) | null = null;
 
+    handleRedirectAuthResult().then((res) => {
+      if (res && !res.isPecEmail) {
+        console.warn('[Firebase Auth] Redirect sign in rejected: non-PEC email.');
+      }
+    });
+
     const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (docUnsubscribe) {
         docUnsubscribe();
@@ -67,16 +72,26 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (firebaseUser) {
-        console.log('[Firebase Auth] User authenticated:', firebaseUser.uid, firebaseUser.email);
+        const email = (firebaseUser.email || '').trim().toLowerCase();
+        if (!email.endsWith('@pec.edu.in')) {
+          console.warn('[Firebase Auth] Rejecting non-PEC email session on auth state change:', email);
+          signOutUser();
+          setUser(INITIAL_USER);
+          setLoading(false);
+          return;
+        }
+
+        console.log('[Firebase Auth] User authenticated via Google:', firebaseUser.uid, email);
         // Subscribe to Firestore user doc
         docUnsubscribe = subscribeToUserProfile(firebaseUser.uid, (firestoreProfile) => {
           if (firestoreProfile) {
-            console.log('[Firestore Users] Loaded user doc:', firestoreProfile);
+            console.log('[Firestore Users] Loaded existing user doc:', firestoreProfile);
             setUser({
               ...INITIAL_USER,
               ...firestoreProfile,
               uid: firebaseUser.uid,
-              email: firebaseUser.email || firestoreProfile.email || '',
+              email: email || firestoreProfile.email || '',
+              name: firestoreProfile.name || firebaseUser.displayName || parseNameFromPecEmail(email),
               isVerified: true,
             });
             syncUserListingWithProfile(
@@ -85,12 +100,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
               firestoreProfile.deliveryOptIn ?? true
             );
           } else {
-            console.log('[Firestore Users] No existing user doc found, seeding initial profile.');
+            console.log('[Firestore Users] No user doc exists yet. Will be created on setup.');
             const initialDoc: UserProfile = {
               ...INITIAL_USER,
               uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
+              email: email,
+              name: firebaseUser.displayName || parseNameFromPecEmail(email),
               isVerified: true,
+              hasCompletedSetup: false,
             };
             setUser(initialDoc);
             saveUserProfileDoc(firebaseUser.uid, initialDoc);
@@ -110,28 +127,60 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const setVerifiedEmail = async (email: string, parsedName: string) => {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = parsedName.trim() || parseNameFromPecEmail(cleanEmail);
-
+  const signInWithGoogleAccount = async (): Promise<UserProfile> => {
     setLoading(true);
     try {
-      const firebaseUser = await authenticatePecUser(cleanEmail, cleanName);
-      const updatedProfile: UserProfile = {
-        ...user,
-        uid: firebaseUser.uid,
-        email: cleanEmail,
-        name: cleanName,
-        isVerified: true,
-      };
-      setUser(updatedProfile);
-      await saveUserProfileDoc(firebaseUser.uid, updatedProfile);
-    } catch (error) {
-      console.error('[Firebase Auth] Failed to authenticate email:', error);
+      const { user: firebaseUser, isPecEmail } = await signInWithGoogle();
+      if (!isPecEmail) {
+        throw new Error('Please sign in with your PEC college email account (@pec.edu.in).');
+      }
+
+      const email = (firebaseUser.email || '').trim().toLowerCase();
+      const realName = firebaseUser.displayName || parseNameFromPecEmail(email) || 'PEC Student';
+
+      // Check if user document ALREADY exists in Firestore
+      const existingDoc = await getUserProfileDoc(firebaseUser.uid);
+
+      if (existingDoc && existingDoc.hasCompletedSetup) {
+        console.log('[UserContext] Recognized existing user with completed setup:', existingDoc);
+        const existingProfile: UserProfile = {
+          ...INITIAL_USER,
+          ...existingDoc,
+          uid: firebaseUser.uid,
+          email: email,
+          name: existingDoc.name || realName,
+          isVerified: true,
+          hasCompletedSetup: true,
+        };
+        setUser(existingProfile);
+        // Save verified status without overwriting hostel/room setup
+        await saveUserProfileDoc(firebaseUser.uid, { isVerified: true });
+        return existingProfile;
+      } else {
+        console.log('[UserContext] New user or incomplete setup:', existingDoc);
+        const newProfile: UserProfile = {
+          ...INITIAL_USER,
+          ...(existingDoc || {}),
+          uid: firebaseUser.uid,
+          email: email,
+          name: realName,
+          isVerified: true,
+          hasCompletedSetup: false,
+        };
+        setUser(newProfile);
+        await saveUserProfileDoc(firebaseUser.uid, newProfile);
+        return newProfile;
+      }
+    } catch (error: any) {
+      console.error('[Firebase Auth] Google Sign-In error:', error);
       throw error;
     } finally {
       setLoading(false);
     }
+  };
+
+  const setVerifiedEmail = async (email: string, parsedName: string) => {
+    await signInWithGoogleAccount();
   };
 
   const setHostelAndRoom = async (hostel: HostelName, roomNumber: string) => {
@@ -178,6 +227,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         loading,
+        signInWithGoogleAccount,
         setVerifiedEmail,
         setHostelAndRoom,
         toggleAwakeStatus,

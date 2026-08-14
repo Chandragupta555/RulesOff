@@ -1,46 +1,67 @@
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   User as FirebaseUser
 } from "firebase/auth";
 import { auth } from "./config";
 
-// Deterministic secure password helper so PEC email onboarding is passwordless & frictionless for students
-const getDeterministicPasswordForPecEmail = (email: string): string => {
-  const prefix = email.trim().toLowerCase().split("@")[0];
-  return `PecRulesOff#2026_${prefix}`;
-};
-
 /**
- * Authenticate or register a PEC student using Firebase Auth.
+ * Sign in user using Google Auth provider restricted to PEC domain.
  */
-export const authenticatePecUser = async (
-  email: string,
-  name?: string
-): Promise<FirebaseUser> => {
-  const cleanEmail = email.trim().toLowerCase();
-  const password = getDeterministicPasswordForPecEmail(cleanEmail);
+export const signInWithGoogle = async (): Promise<{ user: FirebaseUser; isPecEmail: boolean }> => {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({
+    hd: "pec.edu.in",
+    prompt: "select_account"
+  });
+
+  let user: FirebaseUser;
 
   try {
-    // Attempt sign in first
-    const credential = await signInWithEmailAndPassword(auth, cleanEmail, password);
-    return credential.user;
+    const result = await signInWithPopup(auth, provider);
+    user = result.user;
   } catch (error: any) {
-    // If user does not exist or credentials fail, create new account
-    if (
-      error.code === "auth/user-not-found" ||
-      error.code === "auth/invalid-credential"
-    ) {
-      const newCredential = await createUserWithEmailAndPassword(
-        auth,
-        cleanEmail,
-        password
-      );
-      return newCredential.user;
+    console.warn("[Firebase Auth] signInWithPopup failed or blocked, attempting fallback:", error.code);
+    if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+      await signInWithRedirect(auth, provider);
+      // Flow redirects to Google page
+      throw new Error("Redirecting to Google sign in...");
     }
     throw error;
   }
+
+  const email = (user.email || "").trim().toLowerCase();
+  const isPecEmail = email.endsWith("@pec.edu.in");
+
+  if (!isPecEmail) {
+    console.warn("[Firebase Auth] Non-PEC email attempted sign in:", email);
+    await signOut(auth);
+  }
+
+  return { user, isPecEmail };
+};
+
+/**
+ * Handle redirect result if signInWithRedirect was triggered on mobile.
+ */
+export const handleRedirectAuthResult = async (): Promise<{ user: FirebaseUser; isPecEmail: boolean } | null> => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const email = (result.user.email || "").trim().toLowerCase();
+      const isPecEmail = email.endsWith("@pec.edu.in");
+      if (!isPecEmail) {
+        await signOut(auth);
+      }
+      return { user: result.user, isPecEmail };
+    }
+  } catch (error) {
+    console.error("[Firebase Auth] Redirect result error:", error);
+  }
+  return null;
 };
 
 /**

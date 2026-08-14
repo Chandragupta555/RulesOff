@@ -17,6 +17,7 @@ export interface UserProfile {
 export interface UserContextType {
   user: UserProfile;
   loading: boolean;
+  signInWithGoogleAccount: () => Promise<UserProfile>;
   setVerifiedEmail: (email: string, parsedName: string) => Promise<void>;
   setHostelAndRoom: (hostel: HostelName, roomNumber: string) => Promise<void>;
   toggleAwakeStatus: () => Promise<void>;
