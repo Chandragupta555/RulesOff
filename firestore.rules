@@ -38,10 +38,22 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.buyerUid == request.auth.uid;
     }
 
-    // Weekly Sales Aggregation Rules
+    // Weekly Sales Aggregation Rules (Hardened defense-in-depth on Spark plan)
     match /weeklySales/{salesId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasOnly(['hostel', 'productId', 'productName', 'totalUnits', 'totalRevenue', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['hostel', 'productId', 'productName', 'totalUnits', 'totalRevenue', 'updatedAt'])
+        && request.resource.data.totalUnits is number && request.resource.data.totalUnits > 0
+        && request.resource.data.totalRevenue is number && request.resource.data.totalRevenue > 0;
+
+      allow update: if isAuthenticated()
+        && request.resource.data.keys().hasOnly(['hostel', 'productId', 'productName', 'totalUnits', 'totalRevenue', 'updatedAt'])
+        && request.resource.data.hostel == resource.data.hostel
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.totalUnits is number && request.resource.data.totalUnits > resource.data.totalUnits
+        && request.resource.data.totalRevenue is number && request.resource.data.totalRevenue >= resource.data.totalRevenue;
     }
 
     // Product Suggestions Collection Rules
