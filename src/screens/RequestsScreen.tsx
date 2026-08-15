@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
@@ -18,7 +18,7 @@ export const RequestsScreen: React.FC = () => {
   const initialTab = (searchParams.get('tab') as 'incoming' | 'outgoing') || 'incoming';
   const [activeTab, setActiveTab] = useState<'incoming' | 'outgoing'>(initialTab);
 
-  const { user } = useUser();
+  const { user, loading } = useUser();
 
   const [incomingRequests, setIncomingRequests] = useState<FirestoreRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FirestoreRequest[]>([]);
@@ -43,7 +43,19 @@ export const RequestsScreen: React.FC = () => {
     };
   }, [user.uid]);
 
-  const userRoom = user.roomNumber || 'A304';
+  if (loading) {
+    return (
+      <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
+
+  if (!user.hostel || !user.roomNumber) {
+    return <Navigate to="/setup" replace />;
+  }
+
+  const userRoom = user.roomNumber;
 
   const handleTabChange = (tab: 'incoming' | 'outgoing') => {
     setActiveTab(tab);

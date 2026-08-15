@@ -182,7 +182,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isActualHostelChange: boolean = false
   ) => {
     const raw = roomNumber.trim().toUpperCase();
-    const match = raw.match(/([A-Z]\d{3})/);
+    const match = raw.match(/^([A-Z]{1,4}\d{2,4})$/);
     const cleaned = match ? match[1] : raw;
 
     const updated: Partial<UserProfile> = {

@@ -4,7 +4,15 @@ import { useUser } from '../context/UserContext';
 
 export const CatalogPlaceholderScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user, toggleAwakeStatus, toggleDeliveryOptIn, resetUserProfile } = useUser();
+  const { user, loading, toggleAwakeStatus, toggleDeliveryOptIn, resetUserProfile } = useUser();
+
+  if (loading) {
+    return (
+      <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
 
   const handleReset = () => {
     resetUserProfile();
@@ -64,7 +72,7 @@ export const CatalogPlaceholderScreen: React.FC = () => {
             <div>
               <p className="text-[11px] text-on-surface-variant/60 font-semibold uppercase">HOSTEL & ROOM</p>
               <p className="text-sm font-bold text-on-surface">
-                {user.hostel || 'Shivalik'} • Room {user.roomNumber || '---'}
+                {user.hostel} • Room {user.roomNumber}
               </p>
             </div>
           </div>

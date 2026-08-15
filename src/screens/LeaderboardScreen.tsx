@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { MOCK_PRODUCTS, PRODUCT_CATEGORIES } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
@@ -26,10 +26,23 @@ const PEC_HOSTELS: HostelName[] = [
 
 export const LeaderboardScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
-  const userHostel = (user.hostel as HostelName) || 'Shivalik';
+  const { user, loading } = useUser();
 
   const [activeTab, setActiveTab] = useState<'hostels' | 'products'>('hostels');
+
+  if (loading) {
+    return (
+      <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
+
+  if (!user.hostel || !user.roomNumber) {
+    return <Navigate to="/setup" replace />;
+  }
+
+  const userHostel = user.hostel as HostelName;
 
   // Real-time Firestore State
   const [allHostelSales, setAllHostelSales] = useState<WeeklySalesDoc[]>([]);

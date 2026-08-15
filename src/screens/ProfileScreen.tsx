@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { HostelName } from '../types/user';
-import { MOCK_PRODUCTS, PRODUCT_CATEGORIES } from '../data/mockCatalog';
+import { HostelName, HOSTEL_BLOCKS } from '../types/user';
+import { MOCK_PRODUCTS, PRODUCT_CATEGORIES, splitRoomString } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { useNotification } from '../context/NotificationContext';
 import {
   FirestoreListing,
   createListingDoc,
@@ -25,7 +26,8 @@ const HOSTEL_OPTIONS: HostelName[] = [
 
 export const ProfileScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user, toggleAwakeStatus, toggleDeliveryOptIn, setHostelAndRoom, resetUserProfile } = useUser();
+  const { user, loading, toggleAwakeStatus, toggleDeliveryOptIn, setHostelAndRoom, resetUserProfile } = useUser();
+  const { permission, requestNotificationPermission, triggerTestNotification } = useNotification();
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
@@ -33,7 +35,25 @@ export const ProfileScreen: React.FC = () => {
   const [selectedHostel, setSelectedHostel] = useState<HostelName>(
     (user.hostel as HostelName) || 'Shivalik'
   );
-  const [newRoom, setNewRoom] = useState(user.roomNumber || 'A304');
+
+  const initialBlocks = HOSTEL_BLOCKS[selectedHostel] || ['A'];
+  const initialSplit = splitRoomString(user.roomNumber || '', initialBlocks);
+
+  const [selectedBlock, setSelectedBlock] = useState<string>(initialSplit.block || initialBlocks[0]);
+  const [numericRoom, setNumericRoom] = useState<string>(initialSplit.number || '');
+  const [newRoom, setNewRoom] = useState(user.roomNumber || '');
+
+  if (loading) {
+    return (
+      <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
+
+  if (!user.hostel || !user.roomNumber) {
+    return <Navigate to="/setup" replace />;
+  }
 
   // Real-time Firestore Seller Listings State
   const [myListings, setMyListings] = useState<FirestoreListing[]>([]);
@@ -91,7 +111,9 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const handleInitiateLocationSave = () => {
-    if (!newRoom.trim()) return;
+    if (!numericRoom.trim()) return;
+    const fullRoom = `${selectedBlock}${numericRoom.trim()}`;
+    setNewRoom(fullRoom);
     setIsPickerModalOpen(false);
     setIsConfirmModalOpen(true);
   };
@@ -176,8 +198,8 @@ export const ProfileScreen: React.FC = () => {
         await createListingDoc({
           sellerUid: user.uid || '',
           sellerName: user.name || 'PEC Student',
-          sellerRoom: user.roomNumber || 'A304',
-          hostel: (user.hostel as HostelName) || 'Shivalik',
+          sellerRoom: user.roomNumber,
+          hostel: user.hostel as HostelName,
           productId: targetProduct.id,
           productName: targetProduct.name,
           quantity: listingQuantity,
@@ -231,10 +253,10 @@ export const ProfileScreen: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-xl font-extrabold text-white">
-                  {user.name || 'Rohit Sharma'}
+                  {user.name || 'PEC Student'}
                 </h2>
                 <p className="text-xs text-on-surface-variant font-mono mt-0.5">
-                  {maskEmail(user.email || 'rohit.bt22cse@pec.edu.in')}
+                  {maskEmail(user.email || '')}
                 </p>
               </div>
             </div>
@@ -257,7 +279,7 @@ export const ProfileScreen: React.FC = () => {
                 My Listings Tonight 🛍️
               </h3>
               <p className="text-xs text-on-surface-variant">
-                Items you're selling from Room {user.roomNumber || 'A304'}
+                Items you're selling from Room {user.roomNumber}
               </p>
             </div>
             <button
@@ -379,11 +401,11 @@ export const ProfileScreen: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <span className="text-base font-extrabold text-white block">
-                {user.hostel || 'Shivalik'} Hostel
+                {user.hostel} Hostel
               </span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-xs text-primary-container font-bold">
-                  Room {user.roomNumber || 'A304'}
+                  Room {user.roomNumber}
                 </span>
                 {!isCooldownActive && (
                   <span className="text-[10px] text-on-surface-variant/70 italic">
@@ -405,7 +427,12 @@ export const ProfileScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedHostel((user.hostel as HostelName) || 'Shivalik');
+                  const currentHostel = user.hostel as HostelName;
+                  const blocks = HOSTEL_BLOCKS[currentHostel] || ['A'];
+                  const split = splitRoomString(user.roomNumber || '', blocks);
+                  setSelectedHostel(currentHostel);
+                  setSelectedBlock(split.block);
+                  setNumericRoom(split.number);
                   setNewRoom(user.roomNumber || '');
                   setIsPickerModalOpen(true);
                 }}
@@ -437,6 +464,56 @@ export const ProfileScreen: React.FC = () => {
               }`}
             ></div>
           </button>
+        </div>
+
+        {/* NOTIFICATIONS SETTINGS & TEST CARD */}
+        <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-4 flex flex-col gap-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-primary-container">notifications</span>
+                <span>Request Notifications</span>
+              </h3>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                {permission === 'granted'
+                  ? 'Sound & vibration active for incoming requests'
+                  : permission === 'denied'
+                  ? 'Blocked in browser settings'
+                  : 'Enable to get instant alerts'}
+              </p>
+            </div>
+
+            {permission === 'granted' ? (
+              <span className="text-[10px] font-extrabold text-green-400 bg-green-500/15 border border-green-500/30 px-3 py-1 rounded-full uppercase">
+                Active 🟢
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={requestNotificationPermission}
+                className="bg-primary-container text-black font-extrabold text-xs px-3.5 py-1.5 rounded-full uppercase tracking-wider neon-glow active:scale-95 cursor-pointer"
+              >
+                Enable
+              </button>
+            )}
+          </div>
+
+          {permission === 'granted' && (
+            <button
+              type="button"
+              onClick={triggerTestNotification}
+              className="w-full py-2.5 rounded-xl bg-[#1e2020] border border-[#333535] text-xs font-bold text-primary-container hover:bg-primary-container/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <span className="material-symbols-outlined text-sm">volume_up</span>
+              <span>Test Request Sound & Vibration</span>
+            </button>
+          )}
+
+          {permission === 'denied' && (
+            <p className="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl leading-relaxed">
+              💡 Notifications are blocked by your browser. To enable them, tap the site settings lock icon in your browser URL bar and allow Notifications.
+            </p>
+          )}
         </div>
 
         {/* LOGOUT BUTTON */}
@@ -599,13 +676,21 @@ export const ProfileScreen: React.FC = () => {
             </h3>
 
             <div className="flex flex-col gap-3">
+              {/* Hostel Select */}
               <div>
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">
                   Hostel
                 </label>
                 <select
                   value={selectedHostel}
-                  onChange={(e) => setSelectedHostel(e.target.value as HostelName)}
+                  onChange={(e) => {
+                    const h = e.target.value as HostelName;
+                    setSelectedHostel(h);
+                    const blocks = HOSTEL_BLOCKS[h] || ['Main'];
+                    if (!blocks.includes(selectedBlock)) {
+                      setSelectedBlock(blocks[0]);
+                    }
+                  }}
                   className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-3 text-white font-sans text-sm focus:outline-none focus:border-primary-container cursor-pointer"
                 >
                   {HOSTEL_OPTIONS.map((h) => (
@@ -616,17 +701,45 @@ export const ProfileScreen: React.FC = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">
-                  Room Number
-                </label>
-                <input
-                  type="text"
-                  value={newRoom}
-                  onChange={(e) => setNewRoom(e.target.value.toUpperCase())}
-                  placeholder="e.g. A304"
-                  className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-4 text-white font-sans text-sm focus:outline-none focus:border-primary-container"
-                />
+              {/* Block & Room Number Grid */}
+              <div className="grid grid-cols-5 gap-3">
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">
+                    Block
+                  </label>
+                  <select
+                    value={selectedBlock}
+                    onChange={(e) => setSelectedBlock(e.target.value)}
+                    className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-2 text-white font-bold text-sm focus:outline-none focus:border-primary-container cursor-pointer"
+                  >
+                    {(HOSTEL_BLOCKS[selectedHostel] || ['Main']).map((b) => (
+                      <option key={b} value={b} className="bg-[#121414] text-white font-bold">
+                        Block {b}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-3 flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1">
+                    Room No.
+                  </label>
+                  <div className="relative w-full rounded-xl border border-[#333535] bg-[#1e2020] focus-within:border-primary-container flex items-center">
+                    <span className="absolute left-2.5 text-[11px] font-extrabold text-primary-container bg-primary-container/10 border border-primary-container/30 px-1.5 py-0.5 rounded">
+                      {selectedBlock}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={4}
+                      value={numericRoom}
+                      onChange={(e) => setNumericRoom(e.target.value.replace(/\D/g, ''))}
+                      placeholder="304"
+                      className="w-full bg-transparent border-none rounded-xl py-3 pl-12 pr-3 font-mono font-bold text-sm text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -641,7 +754,12 @@ export const ProfileScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={handleInitiateLocationSave}
-                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow cursor-pointer"
+                disabled={!numericRoom.trim()}
+                className={`flex-1 font-extrabold text-xs py-3 rounded-full uppercase tracking-wider cursor-pointer ${
+                  numericRoom.trim()
+                    ? 'bg-primary-container text-black neon-glow active:scale-95'
+                    : 'bg-[#242626] text-on-surface-variant/40 border border-[#333535] cursor-not-allowed'
+                }`}
               >
                 Save Location
               </button>

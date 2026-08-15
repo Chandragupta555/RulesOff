@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useUser } from '../context/UserContext';
@@ -13,7 +13,7 @@ export const RequestConfirmationScreen: React.FC = () => {
   const { listingId } = useParams<{ listingId: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useUser();
+  const { user, loading: loadingUser } = useUser();
 
   const methodParam = (searchParams.get('method') as RequestMethod) || 'pickup';
 
@@ -40,6 +40,18 @@ export const RequestConfirmationScreen: React.FC = () => {
       .finally(() => setLoadingListing(false));
   }, [listingId]);
 
+  if (loadingListing || loadingUser) {
+    return (
+      <div className="bg-[#121414] min-h-screen flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
+
+  if (!user.hostel || !user.roomNumber) {
+    return <Navigate to="/setup" replace />;
+  }
+
   const product = MOCK_PRODUCTS.find((p) => p.id === listing?.productId) || MOCK_PRODUCTS[0];
   const maxQty = Math.max(1, listing?.quantity || 1);
 
@@ -57,8 +69,8 @@ export const RequestConfirmationScreen: React.FC = () => {
       await createRequestDoc({
         buyerUid: user.uid,
         buyerName: user.name || 'PEC Student',
-        buyerRoom: user.roomNumber || 'A304',
-        buyerHostel: (user.hostel as HostelName) || 'Shivalik',
+        buyerRoom: user.roomNumber,
+        buyerHostel: user.hostel as HostelName,
         sellerUid: listing.sellerUid,
         sellerName: listing.sellerName,
         sellerRoom: listing.sellerRoom,
@@ -126,7 +138,7 @@ export const RequestConfirmationScreen: React.FC = () => {
               {product.name}
             </h2>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Seller: <span className="font-semibold text-white">{listing?.sellerName || 'PEC Student'}</span> (Room {listing?.sellerRoom || 'A304'})
+              Seller: <span className="font-semibold text-white">{listing?.sellerName || 'PEC Student'}</span> (Room {listing?.sellerRoom})
             </p>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-xs font-bold text-primary-container bg-primary-container/10 px-2.5 py-0.5 rounded-full border border-primary-container/30">

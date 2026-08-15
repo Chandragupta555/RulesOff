@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import { ProductAggregate } from '../types/catalog';
@@ -8,13 +8,25 @@ import { FirestoreListing, subscribeToHostelListings } from '../firebase/listing
 
 export const CatalogScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
-
-  const userHostel = user.hostel || 'Shivalik';
-  const userRoom = user.roomNumber || 'A304';
+  const { user, loading } = useUser();
 
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
+
+  if (loading) {
+    return (
+      <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
+
+  if (!user.hostel || !user.roomNumber) {
+    return <Navigate to="/setup" replace />;
+  }
+
+  const userHostel = user.hostel;
+  const userRoom = user.roomNumber;
 
   // Subscribe in real-time to all listings for user's hostel in Firestore
   useEffect(() => {
@@ -104,6 +116,10 @@ export const CatalogScreen: React.FC = () => {
 
           <button
             type="button"
+            onClick={() => {
+              if (navigator.vibrate) navigator.vibrate(15);
+              navigate('/requests?tab=incoming');
+            }}
             className="w-9 h-9 rounded-full bg-[#1e2020] flex items-center justify-center border border-[#333535] relative active:scale-95 transition-transform cursor-pointer"
           >
             <span className="material-symbols-outlined text-on-surface text-xl">notifications</span>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { MOCK_PRODUCTS, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
@@ -9,14 +9,26 @@ import { Listing } from '../types/catalog';
 export const RoomListScreen: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, loading } = useUser();
 
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivery'>('all');
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
 
+  if (loading) {
+    return (
+      <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
+        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
+      </div>
+    );
+  }
+
+  if (!user.hostel || !user.roomNumber) {
+    return <Navigate to="/setup" replace />;
+  }
+
   const product = MOCK_PRODUCTS.find((p) => p.id === productId) || MOCK_PRODUCTS[0];
-  const userHostel = user.hostel || 'Shivalik';
-  const userRoom = user.roomNumber || 'A304';
+  const userHostel = user.hostel;
+  const userRoom = user.roomNumber;
 
   // Subscribe to real-time Firestore listings for user hostel
   useEffect(() => {
@@ -135,22 +147,20 @@ export const RoomListScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setDeliveryFilter('all')}
-            className={`flex-1 py-2 text-xs font-extrabold rounded-lg uppercase tracking-wider transition-all cursor-pointer ${
-              deliveryFilter === 'all'
-                ? 'bg-primary-container text-black neon-glow'
-                : 'text-on-surface-variant hover:text-white'
-            }`}
+            className={`flex-1 py-2 text-xs font-extrabold rounded-lg uppercase tracking-wider transition-all cursor-pointer ${deliveryFilter === 'all'
+              ? 'bg-primary-container text-black neon-glow'
+              : 'text-on-surface-variant hover:text-white'
+              }`}
           >
             All Rooms ({totalRooms})
           </button>
           <button
             type="button"
             onClick={() => setDeliveryFilter('delivery')}
-            className={`flex-1 py-2 text-xs font-extrabold rounded-lg uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-              deliveryFilter === 'delivery'
-                ? 'bg-primary-container text-black neon-glow'
-                : 'text-on-surface-variant hover:text-white'
-            }`}
+            className={`flex-1 py-2 text-xs font-extrabold rounded-lg uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${deliveryFilter === 'delivery'
+              ? 'bg-primary-container text-black neon-glow'
+              : 'text-on-surface-variant hover:text-white'
+              }`}
           >
             <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
             <span>Delivery Only</span>

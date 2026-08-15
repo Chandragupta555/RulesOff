@@ -64,8 +64,8 @@ const INITIAL_SEEDED_REQUESTS: RequestItem[] = [
 
 export const RequestProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useUser();
-  const userRoom = user.roomNumber || 'A304';
-  const userName = user.name || 'Rohit Sharma';
+  const userRoom = user.roomNumber;
+  const userName = user.name || 'PEC Student';
 
   const [requests, setRequests] = useState<RequestItem[]>(() => {
     try {

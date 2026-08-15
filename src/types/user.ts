@@ -1,5 +1,14 @@
 export type HostelName = 'Shivalik' | 'Aravali' | 'Kurukshetra' | 'Himalaya' | 'Kalpana Chawala' | 'Vindhya';
 
+export const HOSTEL_BLOCKS: Record<HostelName, string[]> = {
+  'Shivalik': ['A', 'B', 'C'],
+  'Aravali': ['A', 'B'],
+  'Himalaya': ['NB', 'OB'],
+  'Kurukshetra': ['Main'],
+  'Vindhya': ['Main'],
+  'Kalpana Chawala': ['Main'],
+};
+
 export interface UserProfile {
   uid?: string;
   name: string;

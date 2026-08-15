@@ -20,7 +20,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 14,
     iconName: 'ramen_dining',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBS8GbLxU4aPaAV9aMMhovsvP36DZYvoIs2GbUMsDPMkihA-ii6hfSkciOuu9Z-RBPTV6RlK32tcIBFy1rwOQWmNF_5T8IJ5UFhaBy-1UTfvebKxbs5zWG_KQE77qMNybxJEzn0BFZuh0q16a2eQTWLOyfi52XMn7ghhewc-RiAW4lrBWr101cwAMrDoFEQ8hDZIkV4yWzb5VT_sDq78ktIZMsieEblv7EOV8QxTQJSbu1rviFkWwmY',
+      'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80',
     description: '2-Minute Masala Noodles. The ultimate late-night study fuel.',
   },
   {
@@ -30,7 +30,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 50,
     iconName: 'soup_kitchen',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBS8GbLxU4aPaAV9aMMhovsvP36DZYvoIs2GbUMsDPMkihA-ii6hfSkciOuu9Z-RBPTV6RlK32tcIBFy1rwOQWmNF_5T8IJ5UFhaBy-1UTfvebKxbs5zWG_KQE77qMNybxJEzn0BFZuh0q16a2eQTWLOyfi52XMn7ghhewc-RiAW4lrBWr101cwAMrDoFEQ8hDZIkV4yWzb5VT_sDq78ktIZMsieEblv7EOV8QxTQJSbu1rviFkWwmY',
+      'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
     description: 'Instant Spicy Garlic Seafood/Veg Cup Noodles.',
   },
   {
@@ -40,7 +40,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 15,
     iconName: 'ramen_dining',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBS8GbLxU4aPaAV9aMMhovsvP36DZYvoIs2GbUMsDPMkihA-ii6hfSkciOuu9Z-RBPTV6RlK32tcIBFy1rwOQWmNF_5T8IJ5UFhaBy-1UTfvebKxbs5zWG_KQE77qMNybxJEzn0BFZuh0q16a2eQTWLOyfi52XMn7ghhewc-RiAW4lrBWr101cwAMrDoFEQ8hDZIkV4yWzb5VT_sDq78ktIZMsieEblv7EOV8QxTQJSbu1rviFkWwmY',
+      'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80',
     description: 'Sunfeast Yippee long non-sticky noodles.',
   },
   {
@@ -50,7 +50,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 30,
     iconName: 'set_meal',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBwKxRdou5JLdGAjXoO8zD80swKlAevmZ7a-cr5H09y5AID9fvhdylaXNE8TiGDPMLNZbP2t1FwQgqP0bAPJ_mFaD9JUUcLTix_52apmAjv6QnU5BN15B4uhLMF8INHyCK-5AnGo5HkibaTvJ-j_5Dckiehqy7x7tMe0eMihXVr_42hh5tZWaWdD1zQOWTuGy5B8lc3NhtpIJ0R9IO1CV6M_dao_Iemm-B1yp8igL9hchc14bMFQ6eJ',
+      'https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=800&q=80',
     description: 'Saffola Masala Oats instant savory pouch.',
   },
 
@@ -62,7 +62,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'lunch_dining',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
     description: 'Magic Masala & Classic Salted potato chips.',
   },
   {
@@ -72,7 +72,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'local_fire_department',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDbIwvG8waF6ql68810MiFA3ZsgaTypSd5psfXN6qfgegN0p6uLuTVDO_EM-rRo5TkvcD1FTyRN8hg_jAuODADC2TvJahww9noX2JU_seMri2yWqozFB52iyDgtdSlZD65ztsbP0xLrJxy9-w3ytc4YqogMxLgrgRsB-0ErMBbnq5czQLeQXioL1Zt41qD-nnzkJfRZOuHx8kSTCePlH_BxPyfNeLafFRTqqDO9rbC2aQ7hU_3ZH7QA',
+      'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=800&q=80',
     description: 'Tedhe Medhe crunchy Masala Munch puffs.',
   },
   {
@@ -82,7 +82,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'category',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?auto=format&fit=crop&w=800&q=80',
     description: 'Achaari Masti crunchy triangle corn chips.',
   },
   {
@@ -92,7 +92,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 35,
     iconName: 'grain',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDbIwvG8waF6ql68810MiFA3ZsgaTypSd5psfXN6qfgegN0p6uLuTVDO_EM-rRo5TkvcD1FTyRN8hg_jAuODADC2TvJahww9noX2JU_seMri2yWqozFB52iyDgtdSlZD65ztsbP0xLrJxy9-w3ytc4YqogMxLgrgRsB-0ErMBbnq5czQLeQXioL1Zt41qD-nnzkJfRZOuHx8kSTCePlH_BxPyfNeLafFRTqqDO9rbC2aQ7hU_3ZH7QA',
+      'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
     description: 'Spicy classic Haldiram Aloo Bhujia namkeen.',
   },
   {
@@ -102,7 +102,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 30,
     iconName: 'details',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1585238342024-78d387f4a707?auto=format&fit=crop&w=800&q=80',
     description: 'Bold cheesy tortilla corn chips.',
   },
 
@@ -114,7 +114,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 10,
     iconName: 'cookie',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
     description: 'Original iconic Glucose biscuits for chai time.',
   },
   {
@@ -124,7 +124,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 25,
     iconName: 'cookie',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80',
     description: 'Rich chocolate cream biscuits with sugar crystals.',
   },
   {
@@ -134,7 +134,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 30,
     iconName: 'cookie',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
     description: 'Chocolate Sandwich Cookies with Vanilla Cream.',
   },
   {
@@ -144,7 +144,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 40,
     iconName: 'cookie',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=800&q=80',
     description: 'Sunfeast Dark Fantasy cookies filled with molten chocolate.',
   },
 
@@ -156,7 +156,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 80,
     iconName: 'cake',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
     description: 'Ultra smooth and creamy milk chocolate bar.',
   },
   {
@@ -166,7 +166,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 30,
     iconName: 'cake',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=800&q=80',
     description: 'Crispy wafer fingers covered in smooth milk chocolate.',
   },
   {
@@ -176,7 +176,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 40,
     iconName: 'cake',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=800&q=80',
     description: 'Hunger busting roasted peanut, caramel and nougat bar.',
   },
   {
@@ -186,7 +186,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'cake',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80',
     description: 'Chewy caramel and nougat chocolate bar.',
   },
 
@@ -198,7 +198,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 40,
     iconName: 'local_drink',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
     description: 'Ice cold 250ml Coca Cola carbonated drink.',
   },
   {
@@ -208,7 +208,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 40,
     iconName: 'local_drink',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=800&q=80',
     description: 'Strong fizzy cola with taste of thunder.',
   },
   {
@@ -218,7 +218,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'local_drink',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=800&q=80',
     description: 'Fresh Mango juice drink pack.',
   },
 
@@ -230,7 +230,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 125,
     iconName: 'bolt',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=800&q=80',
     description: '250ml Energy Drink. Vitalizes body & mind for late night coding.',
   },
   {
@@ -240,7 +240,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'bolt',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=800&q=80',
     description: 'High energy berry flavoured carbonated beverage.',
   },
 
@@ -252,7 +252,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 30,
     iconName: 'water_drop',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
     description: 'Delicious chilled Amul Kool Koko chocolate drink.',
   },
   {
@@ -262,7 +262,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 20,
     iconName: 'water_drop',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBhrtnySZmxlnJdN6JAsXgXrERxLTkUFaLuAbQb4Bvoal7EXwBar3rpDqyhHGHO1ja2-fSurn7cE95SsOG8X0mFNRXFYTnzYgYd3XvXFb8JlNKT-hxXywDLocxPXCqwwZKqKaWpaEmK6ggrd78QPDcO2KHrNqy0QW1iOcSnZjVin410f5Rmt5zEHNrHuaLNDUKbVmp3g3DIk0MyzZ-EvwerAt_rorUiUIzqIP9hqCKTkEalzr9RQ1_G',
+      'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=800&q=80',
     description: 'Sweet refreshing Rose Lassi pouch.',
   },
 
@@ -274,7 +274,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 25,
     iconName: 'icecream',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
     description: 'Vanilla ice cream bar coated in dark chocolate layer.',
   },
   {
@@ -284,7 +284,7 @@ export const MOCK_PRODUCTS: Product[] = [
     mrp: 40,
     iconName: 'icecream',
     imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDn0Wr9mwbp7VRiU5Ca6Ppx4KynoT4dgL19YZConvPUx4EFcRnbQmZFaerHw00mevTGict6VqWEHyDIhhtEOu_4eIdEQQ7XIFNxg3bF7opL6vD6hJzkjMSllHq-tfNuuTlD_15XSh_695HPnKHzIzOjfGQuNAx723FA08tf3bQJITHY-I3e56SXfAV37412rSO_O7yTcT8UYfeSdPnu2bhzecAKslwCb8P1sZUn2wK1FScAspaGycK8',
+      'https://images.unsplash.com/photo-1557142046-c704a3adf364?auto=format&fit=crop&w=800&q=80',
     description: 'Crispy cone with butterscotch ice cream & chocolate tip.',
   },
 ];
@@ -304,25 +304,64 @@ export const parseRoomNumber = (roomStr: string): ParsedRoom => {
   if (!roomStr) return { block: '', floor: 0, roomNum: 0 };
 
   const clean = roomStr.trim().toUpperCase();
-  const match = clean.match(/^([A-Z])(\d{1,2})(\d{2})$/);
-  if (match) {
+
+  // 1. Try multi-letter block prefix (e.g. NB304, OB102, MAIN201)
+  const multiMatch = clean.match(/^([A-Z]{2,4})(\d{1,2})(\d{2})$/);
+  if (multiMatch) {
     return {
-      block: match[1],
-      floor: parseInt(match[2], 10),
-      roomNum: parseInt(match[3], 10),
+      block: multiMatch[1],
+      floor: parseInt(multiMatch[2], 10),
+      roomNum: parseInt(multiMatch[3], 10),
     };
   }
 
-  const fallbackBlock = clean.charAt(0);
-  const restNums = clean.slice(1).replace(/\D/g, '');
-  const floor = restNums.length >= 3 ? parseInt(restNums.slice(0, -2), 10) : parseInt(restNums.charAt(0) || '0', 10);
-  const roomNum = restNums.length >= 2 ? parseInt(restNums.slice(-2), 10) : 0;
+  // 2. Try single-letter block prefix (e.g. A304, B102, C205)
+  const singleMatch = clean.match(/^([A-Z])(\d{1,2})(\d{2})$/);
+  if (singleMatch) {
+    return {
+      block: singleMatch[1],
+      floor: parseInt(singleMatch[2], 10),
+      roomNum: parseInt(singleMatch[3], 10),
+    };
+  }
 
-  return {
-    block: /[A-Z]/.test(fallbackBlock) ? fallbackBlock : '',
-    floor: isNaN(floor) ? 0 : floor,
-    roomNum: isNaN(roomNum) ? 0 : roomNum,
-  };
+  // 3. Fallback generic match
+  const alphaMatch = clean.match(/^([A-Z]+)(\d+)/);
+  if (alphaMatch) {
+    const blk = alphaMatch[1];
+    const rest = alphaMatch[2];
+    const flr = rest.length >= 3 ? parseInt(rest.slice(0, -2), 10) : parseInt(rest.charAt(0) || '0', 10);
+    const rm = rest.length >= 2 ? parseInt(rest.slice(-2), 10) : 0;
+    return {
+      block: blk,
+      floor: isNaN(flr) ? 0 : flr,
+      roomNum: isNaN(rm) ? 0 : rm,
+    };
+  }
+
+  return { block: '', floor: 0, roomNum: 0 };
+};
+
+export const splitRoomString = (
+  roomStr: string,
+  hostelBlocks: string[] = ['A']
+): { block: string; number: string } => {
+  if (!roomStr) return { block: hostelBlocks[0] || 'A', number: '' };
+
+  const parsed = parseRoomNumber(roomStr);
+  if (parsed.block && parsed.floor !== 0) {
+    const formattedNum = `${parsed.floor}${parsed.roomNum.toString().padStart(2, '0')}`;
+    const matchedBlock = hostelBlocks.includes(parsed.block) ? parsed.block : hostelBlocks[0] || parsed.block;
+    return { block: matchedBlock, number: formattedNum };
+  }
+
+  const match = roomStr.trim().toUpperCase().match(/^([A-Z]{1,4})(\d+)/);
+  if (match) {
+    const matchedBlock = hostelBlocks.includes(match[1]) ? match[1] : hostelBlocks[0] || match[1];
+    return { block: matchedBlock, number: match[2] };
+  }
+
+  return { block: hostelBlocks[0] || 'A', number: roomStr.replace(/\D/g, '') };
 };
 
 export const computeFloorDistance = (room1: string, room2: string): number => {
