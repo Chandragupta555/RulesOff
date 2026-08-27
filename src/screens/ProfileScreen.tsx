@@ -240,17 +240,17 @@ export const ProfileScreen: React.FC = () => {
         await createListingDoc({
           sellerUid: user.uid || '',
           sellerName: user.name || 'PEC Student',
-          sellerRoom: user.roomNumber,
-          hostel: user.hostel as HostelName,
-          productId: selectedProduct.id,
-          productName: prodName,
+          sellerRoom: user.roomNumber || '',
+          hostel: (user.hostel as HostelName) || 'Shivalik',
+          productId: selectedProduct.id || '',
+          productName: prodName || 'Item',
           quantity: listingQuantity,
           price: listingPrice,
-          isSellerAwake: user.isAwake,
-          deliveryOptIn: listingDeliveryOptIn,
+          isSellerAwake: user.isAwake ?? true,
+          deliveryOptIn: Boolean(listingDeliveryOptIn),
           deliveryFee: listingDeliveryOptIn ? listingDeliveryFee : 0,
-          isUnverified: isUnverifiedSelection,
-          unverifiedProductName: isUnverifiedSelection ? prodName : undefined,
+          isUnverified: Boolean(isUnverifiedSelection),
+          ...(isUnverifiedSelection && prodName ? { unverifiedProductName: prodName } : {}),
         });
       }
       setIsAddModalOpen(false);

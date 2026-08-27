@@ -41,8 +41,11 @@ export const createListingDoc = async (
   listingData: Omit<FirestoreListing, 'id' | 'createdAt'>
 ): Promise<string> => {
   const colRef = collection(db, LISTINGS_COLLECTION);
+  const cleanData = Object.fromEntries(
+    Object.entries(listingData).filter(([_, value]) => value !== undefined)
+  );
   const docRef = await addDoc(colRef, {
-    ...listingData,
+    ...cleanData,
     createdAt: Date.now(),
   });
   return docRef.id;
@@ -56,7 +59,10 @@ export const updateListingDoc = async (
   updates: Partial<FirestoreListing>
 ): Promise<void> => {
   const docRef = doc(db, LISTINGS_COLLECTION, id);
-  await updateDoc(docRef, updates);
+  const cleanUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([_, value]) => value !== undefined)
+  );
+  await updateDoc(docRef, cleanUpdates);
 };
 
 /**

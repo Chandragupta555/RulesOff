@@ -36,7 +36,10 @@ export const saveUserProfileDoc = async (
   profileData: Partial<UserProfile>
 ): Promise<void> => {
   const docRef = getUserDocRef(uid);
-  await setDoc(docRef, { ...profileData, uid }, { merge: true });
+  const cleanData = Object.fromEntries(
+    Object.entries({ ...profileData, uid }).filter(([_, value]) => value !== undefined)
+  );
+  await setDoc(docRef, cleanData, { merge: true });
 };
 
 /**

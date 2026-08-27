@@ -91,8 +91,11 @@ export const createRequestDoc = async (
   requestData: Omit<FirestoreRequest, 'id' | 'createdAt' | 'status'>
 ): Promise<string> => {
   const colRef = collection(db, REQUESTS_COLLECTION);
+  const cleanData = Object.fromEntries(
+    Object.entries(requestData).filter(([_, value]) => value !== undefined)
+  );
   const docRef = await addDoc(colRef, {
-    ...requestData,
+    ...cleanData,
     status: 'pending',
     createdAt: Date.now(),
   });
