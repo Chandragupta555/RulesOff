@@ -29,17 +29,23 @@ import {
   updateProductVariantsInMaster,
   removeVariantFromProductDoc
 } from '../firebase/masterCatalog';
+import {
+  FirestoreListing,
+  subscribeToAllListings,
+  adminDeleteListingDoc
+} from '../firebase/listings';
 
 export const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useUser();
 
-  const [activeTab, setActiveTab] = useState<'requests' | 'catalog'>('catalog');
+  const [activeTab, setActiveTab] = useState<'requests' | 'catalog' | 'listings'>('catalog');
 
   // Real-time Firestore State
   const [requests, setRequests] = useState<ProductRequestDoc[]>([]);
   const [categories, setCategories] = useState<TaxonomyCategoryDoc[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [allListings, setAllListings] = useState<FirestoreListing[]>([]);
 
   // UI Feedback Banner
   const [errorMsg, setErrorMsg] = useState('');
@@ -103,12 +109,35 @@ export const AdminScreen: React.FC = () => {
       setProducts(items);
     });
 
+    const unsubListings = subscribeToAllListings((items) => {
+      setAllListings(items);
+    });
+
     return () => {
       unsubReqs();
       unsubCats();
       unsubProds();
+      unsubListings();
     };
   }, []);
+
+  const handleAdminDeleteListing = async (listingId?: string, prodName?: string, sellerName?: string) => {
+    if (!listingId) return;
+    const confirmed = window.confirm(
+      `Admin Moderation: Delete listing for "${prodName || 'this item'}" by ${sellerName || 'seller'} permanently?\n\nThis action cannot be undone. Any active buyer requests for this listing will be automatically cancelled.`
+    );
+    if (!confirmed) return;
+
+    setIsSubmitting(true);
+    try {
+      await adminDeleteListingDoc(listingId);
+      showFeedback(`Deleted listing for "${prodName || 'Item'}" by ${sellerName || 'Seller'} and auto-cancelled dependent requests.`);
+    } catch (err: any) {
+      showFeedback(err.message || 'Failed to delete listing.', true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -542,6 +571,23 @@ export const AdminScreen: React.FC = () => {
               </span>
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('listings')}
+            className={`flex-1 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-150 cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === 'listings'
+                ? 'bg-primary-container text-black neon-glow shadow-md'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
+          >
+            <span>Live Shelf</span>
+            {allListings.length > 0 && (
+              <span className="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-primary-container/30 text-white border border-primary-container/40 font-mono">
+                {allListings.length}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
@@ -818,6 +864,91 @@ export const AdminScreen: React.FC = () => {
                         className="flex-1 py-2.5 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-all cursor-pointer"
                       >
                         Approve & Place
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: LIVE SHELF LISTINGS MODERATION */}
+        {activeTab === 'listings' && (
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center bg-[#121212] border border-[#1F1F1F] rounded-3xl p-4">
+              <div>
+                <h2 className="text-base font-extrabold text-white">Live Shelf Moderation</h2>
+                <p className="text-xs text-on-surface-variant">
+                  {allListings.length} Active Listings Posted Across Hostels
+                </p>
+              </div>
+              <span className="text-xs font-bold text-red-400 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/30">
+                Admin Access
+              </span>
+            </div>
+
+            {allListings.length === 0 ? (
+              <div className="bg-[#121414] border border-[#242626] rounded-3xl p-8 text-center flex flex-col items-center gap-2">
+                <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-1">
+                  storefront
+                </span>
+                <h3 className="text-sm font-extrabold text-white">No active listings on shelf</h3>
+                <p className="text-xs text-on-surface-variant max-w-xs">
+                  There are currently no active room listings posted by sellers across any hostel.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {allListings.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-[#121414] border border-[#242626] rounded-3xl p-4 flex flex-col gap-3 hover:border-red-500/40 transition-all"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-extrabold text-white">
+                            {item.productName}
+                          </h3>
+                          {item.isUnverified && (
+                            <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                              Unverified
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-on-surface-variant mt-0.5 font-medium">
+                          Seller: <strong className="text-white">{item.sellerName}</strong> • Room <strong className="text-white">{item.sellerRoom}</strong> ({item.hostel || 'Shivalik'})
+                        </p>
+                      </div>
+
+                      <span className="text-xs font-mono font-extrabold text-primary-container bg-primary-container/10 px-2.5 py-1 rounded-full border border-primary-container/30">
+                        ₹{item.price}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-[#1e2020] text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-on-surface-variant bg-[#1e2020] px-2 py-0.5 rounded-full font-mono border border-[#333535]">
+                          Size: {item.variantSize || 'Standard'}
+                        </span>
+                        <span className="text-[11px] text-on-surface-variant bg-[#1e2020] px-2 py-0.5 rounded-full font-mono border border-[#333535]">
+                          {item.quantity} in stock
+                        </span>
+                        {item.deliveryOptIn && (
+                          <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 font-bold">
+                            🚚 Delivery (+₹{item.deliveryFee || 5})
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdminDeleteListing(item.id, item.productName, item.sellerName)}
+                        className="py-1.5 px-3 rounded-full font-extrabold text-xs text-red-400 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                        <span>Remove Listing</span>
                       </button>
                     </div>
                   </div>

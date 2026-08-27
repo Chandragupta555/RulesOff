@@ -4,8 +4,9 @@ import { useUser } from '../context/UserContext';
 import { Product, Listing } from '../types/catalog';
 import { MOCK_PRODUCTS, getProductById, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
-import { FirestoreListing, subscribeToHostelListings } from '../firebase/listings';
+import { FirestoreListing, subscribeToHostelListings, adminDeleteListingDoc } from '../firebase/listings';
 import { subscribeToApprovedProducts } from '../firebase/productRequests';
+import { isAdminEmail } from '../config/admin';
 
 export const RoomListScreen: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -15,6 +16,8 @@ export const RoomListScreen: React.FC = () => {
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivery'>('all');
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
   const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
+
+  const isAdmin = isAdminEmail(user.email);
 
   // Subscribe to real-time approved products
   useEffect(() => {
@@ -26,6 +29,21 @@ export const RoomListScreen: React.FC = () => {
 
   const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
   const product = getProductById(productId || '', allProducts);
+
+  const handleAdminDeleteListing = async (listingId?: string, name?: string) => {
+    if (!listingId) return;
+    const confirmed = window.confirm(
+      `Admin Moderation: Delete listing for "${name || 'this item'}" permanently?\n\nThis action cannot be undone. Any pending buyer requests for this listing will be automatically cancelled.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await adminDeleteListingDoc(listingId);
+    } catch (err: any) {
+      console.error('[Admin Moderation] Failed to delete listing:', err);
+      alert(err.message || 'Failed to delete listing.');
+    }
+  };
 
   if (loading) {
     return (
@@ -259,13 +277,26 @@ export const RoomListScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleRequestClick(listing.id)}
-                    className="bg-primary-container text-black font-extrabold text-xs px-4 py-3 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-md shrink-0"
-                  >
-                    Request
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => handleAdminDeleteListing(listing.id, product?.name || (listing as any).productName || 'Item')}
+                        className="w-9 h-9 rounded-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                        title="Admin Moderation: Delete Listing"
+                      >
+                        <span className="material-symbols-outlined text-base">delete</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleRequestClick(listing.id)}
+                      className="bg-primary-container text-black font-extrabold text-xs px-4 py-3 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-md"
+                    >
+                      Request
+                    </button>
+                  </div>
                 </div>
               );
             })
