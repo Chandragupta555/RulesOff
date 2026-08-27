@@ -670,6 +670,38 @@ export const ProfileScreen: React.FC = () => {
                 </button>
               </div>
 
+              {/* Pack Size Variant Selector */}
+              {selectedProduct && Array.isArray(selectedProduct.variants) && selectedProduct.variants.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1.5 pl-1">
+                    Pack Size / Variant
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedProduct.variants.map((v) => {
+                      const isSelected = selectedVariant.size === v.size;
+                      return (
+                        <button
+                          key={v.size}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVariant(v);
+                            setListingPrice((prev) => Math.min(prev, v.mrp));
+                          }}
+                          className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex justify-between items-center ${
+                            isSelected
+                              ? 'bg-primary-container/20 border-primary-container text-primary-container'
+                              : 'bg-[#1e2020] border-[#333535] text-on-surface-variant hover:text-white'
+                          }`}
+                        >
+                          <span>{v.size}</span>
+                          <span className="font-mono text-[11px]">MRP ₹{v.mrp}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Quantity Input */}
               <div>
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1.5 pl-1">

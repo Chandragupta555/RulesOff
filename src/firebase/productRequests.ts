@@ -10,6 +10,7 @@ import {
   where,
   onSnapshot,
   writeBatch,
+  deleteField,
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './config';
@@ -97,7 +98,7 @@ export const subscribeToProductRequests = (
 };
 
 /**
- * Subscribe in real-time to all approved dynamic products in Firestore.
+ * Subscribe in real-time to all approved dynamic products in Firestore with idempotent migration.
  */
 export const subscribeToApprovedProducts = (
   onUpdate: (products: Product[]) => void
@@ -108,9 +109,22 @@ export const subscribeToApprovedProducts = (
     (snap) => {
       const items: Product[] = snap.docs.map((d) => {
         const data = d.data() as any;
-        const variants: ProductVariant[] = Array.isArray(data.variants) && data.variants.length > 0
+        const hasVariants = Array.isArray(data.variants) && data.variants.length > 0;
+        const hasFlatMrp = data.mrp !== undefined;
+
+        const variants: ProductVariant[] = hasVariants
           ? data.variants
-          : [{ size: 'Standard', mrp: data.mrp || 20 }];
+          : [{ size: 'Standard', mrp: typeof data.mrp === 'number' ? data.mrp : 20 }];
+
+        // Idempotent migration check: clean up flat `mrp` and set `variants` in Firestore
+        if (!hasVariants || hasFlatMrp) {
+          updateDoc(d.ref, {
+            variants,
+            mrp: deleteField(),
+          }).catch((err) => {
+            // Silently ignore if auth session isn't admin
+          });
+        }
 
         return {
           id: d.id,

@@ -5,6 +5,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   getDocs,
   query,
   where,
@@ -13,7 +14,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './config';
-import { Product, ProductCategory } from '../types/catalog';
+import { Product, ProductCategory, ProductVariant } from '../types/catalog';
 import { MOCK_PRODUCTS, PRODUCT_CATEGORIES } from '../data/mockCatalog';
 
 export interface TaxonomyCategoryDoc {
@@ -27,15 +28,10 @@ const MASTER_PRODUCTS_COLLECTION = 'masterProducts';
 const CATALOG_TAXONOMY_COLLECTION = 'catalogTaxonomy';
 const LISTINGS_COLLECTION = 'listings';
 
-let isSeedingTriggered = false;
-
 /**
- * Automatic One-Time Seeding: Hydrates Firestore with base catalog if empty.
+ * Seed master catalog into Firestore if collection is empty.
  */
 export const seedMasterCatalogIfEmpty = async (): Promise<void> => {
-  if (isSeedingTriggered) return;
-  isSeedingTriggered = true;
-
   try {
     const productsColRef = collection(db, MASTER_PRODUCTS_COLLECTION);
     const snap = await getDocs(productsColRef);
@@ -73,7 +69,7 @@ export const seedMasterCatalogIfEmpty = async (): Promise<void> => {
         name: prod.name,
         category: prod.category,
         subcategory: prod.subcategory || 'General',
-        mrp: prod.mrp,
+        variants: prod.variants || [{ size: 'Standard', mrp: prod.mrp || 20 }],
         imageUrl: prod.imageUrl,
         iconName: prod.iconName,
         description: prod.description,
@@ -115,7 +111,7 @@ export const subscribeToMasterCategories = (
 };
 
 /**
- * Real-time subscription to all products in master catalog.
+ * Real-time subscription to all products in master catalog with idempotent migration check.
  */
 export const subscribeToMasterProducts = (
   onUpdate: (products: Product[]) => void
@@ -128,9 +124,22 @@ export const subscribeToMasterProducts = (
     (snap) => {
       const items: Product[] = snap.docs.map((d) => {
         const data = d.data();
-        const variants = Array.isArray(data.variants) && data.variants.length > 0
+        const hasVariants = Array.isArray(data.variants) && data.variants.length > 0;
+        const hasFlatMrp = data.mrp !== undefined;
+
+        const variants: ProductVariant[] = hasVariants
           ? data.variants
-          : [{ size: 'Standard', mrp: data.mrp || 20 }];
+          : [{ size: 'Standard', mrp: typeof data.mrp === 'number' ? data.mrp : 20 }];
+
+        // Idempotent migration check: clean up flat `mrp` and set `variants` in Firestore
+        if (!hasVariants || hasFlatMrp) {
+          updateDoc(d.ref, {
+            variants,
+            mrp: deleteField(),
+          }).catch((err) => {
+            // Silently ignore if auth session isn't admin
+          });
+        }
 
         return {
           id: d.id,
