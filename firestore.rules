@@ -11,11 +11,26 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
+    function isOwnerAdmin() {
       return isAuthenticated() && (
         request.auth.token.email != null &&
-        request.auth.token.email.lower() == 'aadityagarg.bt24meta@pec.edu.in'
+        request.auth.token.email.lower() == 'aadityasiddham555@gmail.com'
       );
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email != null && (
+          isOwnerAdmin() ||
+          exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()))
+        )
+      );
+    }
+
+    // Admins Collection Rules (Owner manages dynamic admins)
+    match /admins/{adminEmail} {
+      allow read: if isAuthenticated();
+      allow write: if isOwnerAdmin();
     }
 
     // Users Collection Rules

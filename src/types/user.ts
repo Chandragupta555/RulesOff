@@ -26,6 +26,9 @@ export interface UserProfile {
 export interface UserContextType {
   user: UserProfile;
   loading: boolean;
+  dynamicAdmins: string[];
+  isOwnerAdmin: boolean;
+  isAdmin: boolean;
   signInWithGoogleAccount: () => Promise<UserProfile>;
   setVerifiedEmail: (email: string, parsedName: string) => Promise<void>;
   setHostelAndRoom: (hostel: HostelName, roomNumber: string, isActualHostelChange?: boolean) => Promise<void>;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { ADMIN_EMAIL, isAdminEmail } from '../config/admin';
+import { OWNER_ADMIN_EMAIL, isAdminEmail, isOwnerAdminEmail } from '../config/admin';
 import { ProductCategory, Product, ProductVariant } from '../types/catalog';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import {
@@ -34,10 +34,16 @@ import {
   subscribeToAllListings,
   adminDeleteListingDoc
 } from '../firebase/listings';
+import {
+  DynamicAdminDoc,
+  subscribeToAdminList,
+  grantAdminAccess,
+  revokeAdminAccess
+} from '../firebase/adminManagement';
 
 export const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading } = useUser();
+  const { user, isOwnerAdmin, isAdmin, loading } = useUser();
 
   const [activeTab, setActiveTab] = useState<'requests' | 'catalog' | 'listings'>('catalog');
 
@@ -46,6 +52,8 @@ export const AdminScreen: React.FC = () => {
   const [categories, setCategories] = useState<TaxonomyCategoryDoc[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [allListings, setAllListings] = useState<FirestoreListing[]>([]);
+  const [adminList, setAdminList] = useState<DynamicAdminDoc[]>([]);
+  const [newAdminEmailInput, setNewAdminEmailInput] = useState('');
 
   // UI Feedback Banner
   const [errorMsg, setErrorMsg] = useState('');
@@ -113,11 +121,16 @@ export const AdminScreen: React.FC = () => {
       setAllListings(items);
     });
 
+    const unsubAdmins = subscribeToAdminList((items) => {
+      setAdminList(items);
+    });
+
     return () => {
       unsubReqs();
       unsubCats();
       unsubProds();
       unsubListings();
+      unsubAdmins();
     };
   }, []);
 
@@ -139,6 +152,37 @@ export const AdminScreen: React.FC = () => {
     }
   };
 
+  const handleGrantAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmailInput.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const cleanEmail = newAdminEmailInput.trim().toLowerCase();
+      await grantAdminAccess(cleanEmail, user.email || 'Owner');
+      showFeedback(`Granted Admin access to ${cleanEmail}!`);
+      setNewAdminEmailInput('');
+    } catch (err: any) {
+      showFeedback(err.message || 'Failed to grant admin access.', true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRevokeAdminClick = async (emailToRevoke: string) => {
+    if (window.confirm(`Revoke admin access from "${emailToRevoke}"?`)) {
+      setIsSubmitting(true);
+      try {
+        await revokeAdminAccess(emailToRevoke);
+        showFeedback(`Revoked admin access from ${emailToRevoke}.`);
+      } catch (err: any) {
+        showFeedback(err.message || 'Failed to revoke admin access.', true);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
@@ -148,7 +192,7 @@ export const AdminScreen: React.FC = () => {
   }
 
   // Security Guard: Check Admin Email
-  if (!isAdminEmail(user.email)) {
+  if (!isAdmin) {
     return (
       <div className="bg-[#121414] min-h-screen w-full flex items-center justify-center p-4 select-none">
         <div className="bg-[#121212] border border-red-500/40 rounded-3xl p-6 w-full max-w-md flex flex-col items-center gap-4 text-center shadow-2xl">
@@ -159,7 +203,7 @@ export const AdminScreen: React.FC = () => {
             Admin Access Denied
           </h1>
           <p className="text-xs text-on-surface-variant leading-relaxed">
-            This screen is strictly restricted to administrator <strong className="text-white">{ADMIN_EMAIL}</strong>. You are currently signed in as <strong className="text-white">{user.email || 'Guest User'}</strong>.
+            This screen is strictly restricted to authorized administrators. You are currently signed in as <strong className="text-white">{user.email || 'Guest User'}</strong>.
           </p>
           <button
             type="button"
@@ -606,6 +650,84 @@ export const AdminScreen: React.FC = () => {
             <span className="material-symbols-outlined text-lg text-green-400">check_circle</span>
             <span>{successMsg}</span>
           </div>
+        )}
+
+        {/* OWNER ONLY: MANAGE DYNAMIC ADMINS SECTION */}
+        {isOwnerAdmin && (
+          <section className="bg-[#121212] border-2 border-amber-500/40 rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                </div>
+                <div>
+                  <h2 className="text-base font-extrabold text-white">Owner Control: Manage Admins</h2>
+                  <p className="text-xs text-on-surface-variant">
+                    Grant or revoke dynamic admin rights (Visible ONLY to Owner)
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-extrabold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full uppercase shrink-0">
+                Owner Privilege
+              </span>
+            </div>
+
+            {/* Form: Add New Admin Email */}
+            <form onSubmit={handleGrantAdminSubmit} className="flex gap-2">
+              <input
+                type="email"
+                required
+                placeholder="Enter Google email (e.g. name@gmail.com or PEC email)"
+                value={newAdminEmailInput}
+                onChange={(e) => setNewAdminEmailInput(e.target.value)}
+                className="flex-1 bg-[#1e2020] border border-[#333535] rounded-xl py-2.5 px-3.5 text-white text-xs focus:outline-none focus:border-amber-400 font-mono"
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-amber-400 text-black font-extrabold text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+              >
+                + Add Admin
+              </button>
+            </form>
+
+            {/* Dynamic Admins List */}
+            <div className="flex flex-col gap-2 mt-1">
+              <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider pl-1">
+                Active Dynamic Admins ({adminList.length})
+              </h3>
+
+              {adminList.length === 0 ? (
+                <p className="text-xs text-on-surface-variant italic py-2 pl-1">
+                  No dynamic admins currently granted. Permanent Owner Fallback active.
+                </p>
+              ) : (
+                adminList.map((adm) => (
+                  <div
+                    key={adm.email}
+                    className="bg-[#181a1a] border border-[#2a2c2c] rounded-2xl p-3 flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="text-xs font-extrabold text-white font-mono">
+                        {adm.email}
+                      </div>
+                      <span className="text-[10px] text-on-surface-variant">
+                        Granted: {new Date(adm.createdAt).toLocaleDateString()} by {adm.grantedBy}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRevokeAdminClick(adm.email)}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
         )}
 
         {/* TAB 1: CATALOG TAXONOMY CURATION */}

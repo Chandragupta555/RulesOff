@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { signInWithGoogle, signOutUser, handleRedirectAuthResult } from '../firebase/auth';
+import { signInWithGoogle, signOutUser, handleRedirectAuthResult, isAllowedSignInEmail } from '../firebase/auth';
 import { subscribeToUserProfile, saveUserProfileDoc, getUserProfileDoc } from '../firebase/users';
 import { UserProfile, UserContextType, HostelName } from '../types/user';
+import { isOwnerAdminEmail, isAdminEmail } from '../config/admin';
+import { subscribeToAdminList, DynamicAdminDoc } from '../firebase/adminManagement';
 
 const INITIAL_USER: UserProfile = {
   uid: '',
@@ -53,14 +55,27 @@ export const parseNameFromPecEmail = (email: string): string => {
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
   const [loading, setLoading] = useState<boolean>(true);
+  const [dynamicAdmins, setDynamicAdmins] = useState<DynamicAdminDoc[]>([]);
+
+  // Real-time subscription to dynamic admins list
+  useEffect(() => {
+    const unsubAdmins = subscribeToAdminList((items) => {
+      setDynamicAdmins(items);
+    });
+    return () => unsubAdmins();
+  }, []);
+
+  const dynamicAdminEmails = dynamicAdmins.map((a) => a.email);
+  const isOwnerAdmin = isOwnerAdminEmail(user.email);
+  const isAdmin = isAdminEmail(user.email, dynamicAdminEmails);
 
   // Subscribe to Firebase Auth and Firestore user document
   useEffect(() => {
     let docUnsubscribe: (() => void) | null = null;
 
     handleRedirectAuthResult().then((res) => {
-      if (res && !res.isPecEmail) {
-        console.warn('[Firebase Auth] Redirect sign in rejected: non-PEC email.');
+      if (res && !res.isAllowed) {
+        console.warn('[Firebase Auth] Redirect sign in rejected: unauthorized account.');
       }
     });
 
@@ -72,40 +87,42 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (firebaseUser) {
         const email = (firebaseUser.email || '').trim().toLowerCase();
-        if (!email.endsWith('@pec.edu.in')) {
-          console.warn('[Firebase Auth] Rejecting non-PEC email session on auth state change:', email);
-          signOutUser();
-          setUser(INITIAL_USER);
-          setLoading(false);
-          return;
-        }
-
-        console.log('[Firebase Auth] User authenticated via Google:', firebaseUser.uid, email);
-        // Subscribe to Firestore user doc
-        docUnsubscribe = subscribeToUserProfile(firebaseUser.uid, (firestoreProfile) => {
-          if (firestoreProfile) {
-            console.log('[Firestore Users] Loaded existing user doc:', firestoreProfile);
-            setUser({
-              ...INITIAL_USER,
-              ...firestoreProfile,
-              uid: firebaseUser.uid,
-              email: email || firestoreProfile.email || '',
-              name: firestoreProfile.name || firebaseUser.displayName || parseNameFromPecEmail(email),
-              isVerified: true,
-            });
-          } else {
-            console.log('[Firestore Users] No user doc exists yet. Will be created on setup.');
-            const initialDoc: UserProfile = {
-              ...INITIAL_USER,
-              uid: firebaseUser.uid,
-              email: email,
-              name: firebaseUser.displayName || parseNameFromPecEmail(email),
-              isVerified: true,
-              hasCompletedSetup: false,
-            };
-            setUser(initialDoc);
+        isAllowedSignInEmail(email).then((isAllowed) => {
+          if (!isAllowed) {
+            console.warn('[Firebase Auth] Rejecting unauthorized email session on auth state change:', email);
+            signOutUser();
+            setUser(INITIAL_USER);
+            setLoading(false);
+            return;
           }
-          setLoading(false);
+
+          console.log('[Firebase Auth] User authenticated via Google:', firebaseUser.uid, email);
+          // Subscribe to Firestore user doc
+          docUnsubscribe = subscribeToUserProfile(firebaseUser.uid, (firestoreProfile) => {
+            if (firestoreProfile) {
+              console.log('[Firestore Users] Loaded existing user doc:', firestoreProfile);
+              setUser({
+                ...INITIAL_USER,
+                ...firestoreProfile,
+                uid: firebaseUser.uid,
+                email: email || firestoreProfile.email || '',
+                name: firestoreProfile.name || firebaseUser.displayName || parseNameFromPecEmail(email) || 'Student',
+                isVerified: true,
+              });
+            } else {
+              console.log('[Firestore Users] No user doc exists yet. Will be created on setup.');
+              const initialDoc: UserProfile = {
+                ...INITIAL_USER,
+                uid: firebaseUser.uid,
+                email: email,
+                name: firebaseUser.displayName || parseNameFromPecEmail(email) || 'Student',
+                isVerified: true,
+                hasCompletedSetup: false,
+              };
+              setUser(initialDoc);
+            }
+            setLoading(false);
+          });
         });
       } else {
         console.log('[Firebase Auth] User signed out.');
@@ -123,9 +140,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGoogleAccount = async (): Promise<UserProfile> => {
     setLoading(true);
     try {
-      const { user: firebaseUser, isPecEmail } = await signInWithGoogle();
-      if (!isPecEmail) {
-        throw new Error('Please sign in with your PEC college email account (@pec.edu.in).');
+      const { user: firebaseUser, isAllowed } = await signInWithGoogle();
+      if (!isAllowed) {
+        throw new Error('Access restricted. Please sign in with your PEC college email (@pec.edu.in) or an authorized admin account.');
       }
 
       const email = (firebaseUser.email || '').trim().toLowerCase();
@@ -227,6 +244,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         loading,
+        dynamicAdmins: dynamicAdminEmails,
+        isOwnerAdmin,
+        isAdmin,
         signInWithGoogleAccount,
         setVerifiedEmail,
         setHostelAndRoom,

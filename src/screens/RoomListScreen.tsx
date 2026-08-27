@@ -11,13 +11,11 @@ import { isAdminEmail } from '../config/admin';
 export const RoomListScreen: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { user, loading } = useUser();
+  const { user, isAdmin, loading } = useUser();
 
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivery'>('all');
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
   const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
-
-  const isAdmin = isAdminEmail(user.email);
 
   // Subscribe to real-time approved products
   useEffect(() => {

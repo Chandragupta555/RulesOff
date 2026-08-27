@@ -7,7 +7,7 @@ import { MOCK_PRODUCTS, getProductById, splitRoomString } from '../data/mockCata
 import { BottomNavBar } from '../components/BottomNavBar';
 import { CascadingProductPicker } from '../components/CascadingProductPicker';
 import { useNotification } from '../context/NotificationContext';
-import { ADMIN_EMAIL, isAdminEmail } from '../config/admin';
+import { isAdminEmail, isOwnerAdminEmail } from '../config/admin';
 import { subscribeToMasterProducts } from '../firebase/masterCatalog';
 import { recalculateAndSaveSellerReliabilityScore } from '../firebase/requests';
 import {
@@ -31,7 +31,7 @@ const HOSTEL_OPTIONS: HostelName[] = [
 
 export const ProfileScreen: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading, toggleAwakeStatus, toggleDeliveryOptIn, setHostelAndRoom, resetUserProfile } = useUser();
+  const { user, loading, isAdmin, isOwnerAdmin, toggleAwakeStatus, toggleDeliveryOptIn, setHostelAndRoom, resetUserProfile } = useUser();
   const { permission, requestNotificationPermission, triggerTestNotification } = useNotification();
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -290,6 +290,8 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
+  const isPecEmail = user.email.trim().toLowerCase().endsWith('@pec.edu.in');
+
   return (
     <div className="font-sans min-h-screen w-full flex flex-col select-none bg-[#121414] text-[#e2e2e2] pb-28">
       {/* App Bar Header */}
@@ -297,16 +299,23 @@ export const ProfileScreen: React.FC = () => {
         <h1 className="text-xl font-extrabold text-primary-container tracking-tight italic uppercase drop-shadow-[0_0_8px_rgba(255,95,31,0.4)]">
           Profile & Settings
         </h1>
-        <span className="text-xs font-semibold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-          Verified PEC
-        </span>
+        {isPecEmail ? (
+          <span className="text-xs font-semibold text-green-400 bg-green-500/10 px-3 py-1 rounded-full border border-green-500/20 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+            Verified PEC
+          </span>
+        ) : isAdmin ? (
+          <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20 flex items-center gap-1.5 font-mono">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            {isOwnerAdmin ? 'Owner Admin' : 'Admin'}
+          </span>
+        ) : null}
       </header>
 
       {/* Main Canvas */}
       <main className="w-full px-4 pt-4 flex flex-col gap-5 max-w-md mx-auto flex-1">
         {/* ADMIN PORTAL BANNER (Visible only to authorized admin) */}
-        {isAdminEmail(user.email) && (
+        {isAdmin && (
           <button
             type="button"
             onClick={() => navigate('/admin')}
