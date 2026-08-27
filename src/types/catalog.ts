@@ -10,12 +10,18 @@ export type ProductCategory =
   | 'Ice Cream & Frozen Desserts'
   | 'Bread, Buns & Bakery';
 
+export interface ProductVariant {
+  size: string;
+  mrp: number;
+}
+
 export interface Product {
   id: string;
   name: string;
   category: ProductCategory;
   subcategory: string;
-  mrp: number; // Maximum Retail Price (INR)
+  variants: ProductVariant[];
+  mrp?: number; // Legacy convenience getter / fallback
   imageUrl: string;
   iconName: string;
   description: string;
@@ -27,11 +33,13 @@ export interface Listing {
   id: string;
   sellerUid?: string;
   productId: string;
+  variantSize?: string;
+  mrp?: number;
   hostel: string;
   sellerRoom: string;
   sellerName: string;
   quantity: number;
-  price: number; // Seller price, capped <= mrp
+  price: number; // Seller price, capped <= variant mrp
   isSellerAwake: boolean;
   deliveryOptIn: boolean;
   deliveryFee?: number;

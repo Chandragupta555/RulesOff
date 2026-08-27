@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { ADMIN_EMAIL, isAdminEmail } from '../config/admin';
-import { ProductCategory, Product } from '../types/catalog';
+import { ProductCategory, Product, ProductVariant } from '../types/catalog';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
 import {
   ProductRequestDoc,
   subscribeToProductRequests,
   approveProductRequestDoc,
+  approveProductRequestAsVariantDoc,
   rejectProductRequestDoc
 } from '../firebase/productRequests';
 import {
@@ -24,7 +25,9 @@ import {
   createProductDocInMaster,
   updateProductDocInMaster,
   moveProductDocInMaster,
-  deleteProductDocFromMaster
+  deleteProductDocFromMaster,
+  updateProductVariantsInMaster,
+  removeVariantFromProductDoc
 } from '../firebase/masterCatalog';
 
 export const AdminScreen: React.FC = () => {
@@ -44,11 +47,19 @@ export const AdminScreen: React.FC = () => {
 
   // Pending Request Approve Modal State
   const [selectedRequest, setSelectedRequest] = useState<ProductRequestDoc | null>(null);
+  const [approveMode, setApproveMode] = useState<'new' | 'variant'>('new');
+  const [targetExistingProductId, setTargetExistingProductId] = useState<string>('');
   const [approveCategory, setApproveCategory] = useState<ProductCategory>('Chips & Wafers');
   const [approveSubcategory, setApproveSubcategory] = useState<string>('');
   const [isApproveNewSub, setIsApproveNewSub] = useState(false);
   const [approveNewSubName, setApproveNewSubName] = useState('');
+  const [approveSize, setApproveSize] = useState<string>('Standard');
   const [approveMrp, setApproveMrp] = useState<number>(20);
+
+  // Variant Management Modal State
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const [editingVariantProd, setEditingVariantProd] = useState<Product | null>(null);
+  const [variantInputs, setVariantInputs] = useState<ProductVariant[]>([]);
 
   // Category Modal State (Add / Rename)
   const [isCatModalOpen, setIsCatModalOpen] = useState(false);
@@ -154,9 +165,12 @@ export const AdminScreen: React.FC = () => {
 
   const handleOpenApproveModal = (req: ProductRequestDoc) => {
     setSelectedRequest(req);
+    setApproveMode('new');
+    setTargetExistingProductId(allProductsList[0]?.id || '');
     setApproveCategory('Chips & Wafers');
     setIsApproveNewSub(false);
     setApproveNewSubName('');
+    setApproveSize(req.size || 'Standard');
     setApproveMrp(req.mrp || 20);
 
     const firstCat = categories.find((c) => c.name === 'Chips & Wafers');
@@ -167,25 +181,110 @@ export const AdminScreen: React.FC = () => {
     e.preventDefault();
     if (!selectedRequest || !selectedRequest.id) return;
 
-    const subToSave = isApproveNewSub ? approveNewSubName.trim() : approveSubcategory.trim();
-    if (!subToSave) {
-      showFeedback('Please specify a subcategory.', true);
+    setIsSubmitting(true);
+    try {
+      if (approveMode === 'new') {
+        const subToSave = isApproveNewSub ? approveNewSubName.trim() : approveSubcategory.trim();
+        if (!subToSave) {
+          showFeedback('Please specify a subcategory.', true);
+          return;
+        }
+        await approveProductRequestDoc(
+          selectedRequest.id,
+          selectedRequest.productName,
+          approveCategory,
+          subToSave,
+          approveSize,
+          approveMrp
+        );
+        showFeedback(`Approved "${selectedRequest.productName}" (${approveSize}) into master catalog!`);
+      } else {
+        if (!targetExistingProductId) {
+          showFeedback('Please select an existing product.', true);
+          return;
+        }
+        await approveProductRequestAsVariantDoc(
+          selectedRequest.id,
+          targetExistingProductId,
+          approveSize,
+          approveMrp
+        );
+        showFeedback(`Added variant "${approveSize}" (MRP ₹${approveMrp}) to existing product!`);
+      }
+      setSelectedRequest(null);
+    } catch (err: any) {
+      showFeedback(err.message || 'Failed to approve request.', true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ─── VARIANT MANAGEMENT HANDLERS ──────────────────────────────────────
+
+  const handleOpenVariantModal = (prod: Product) => {
+    setEditingVariantProd(prod);
+    const variants = Array.isArray(prod.variants) && prod.variants.length > 0
+      ? prod.variants.map((v) => ({ ...v }))
+      : [{ size: 'Standard', mrp: prod.mrp || 20 }];
+    setVariantInputs(variants);
+    setIsVariantModalOpen(true);
+  };
+
+  const handleAddVariantInput = () => {
+    setVariantInputs((prev) => [...prev, { size: 'New Size', mrp: 20 }]);
+  };
+
+  const handleUpdateVariantInput = (index: number, field: 'size' | 'mrp', val: string | number) => {
+    setVariantInputs((prev) =>
+      prev.map((v, i) => (i === index ? { ...v, [field]: val } : v))
+    );
+  };
+
+  const handleDeleteVariantInput = async (index: number, variantSize: string) => {
+    if (!editingVariantProd) return;
+
+    if (variantInputs.length <= 1) {
+      showFeedback('A product must have at least one size variant.', true);
       return;
+    }
+
+    try {
+      await removeVariantFromProductDoc(editingVariantProd.id, variantSize, variantInputs);
+      setVariantInputs((prev) => prev.filter((_, i) => i !== index));
+      showFeedback(`Removed variant "${variantSize}" successfully.`);
+    } catch (err: any) {
+      showFeedback(err.message || 'Failed to remove variant.', true);
+    }
+  };
+
+  const handleSaveVariants = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVariantProd) return;
+
+    // Validate size labels and MRP
+    for (const v of variantInputs) {
+      if (!v.size.trim()) {
+        showFeedback('Variant size label cannot be empty.', true);
+        return;
+      }
+      if (v.mrp < 1) {
+        showFeedback('Variant MRP must be at least ₹1.', true);
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
-      await approveProductRequestDoc(
-        selectedRequest.id,
-        selectedRequest.productName,
-        approveCategory,
-        subToSave,
-        approveMrp
-      );
-      setSelectedRequest(null);
-      showFeedback(`Approved "${selectedRequest.productName}" into master catalog!`);
+      const cleanVariants = variantInputs.map((v) => ({
+        size: v.size.trim(),
+        mrp: Number(v.mrp),
+      }));
+      await updateProductVariantsInMaster(editingVariantProd.id, cleanVariants);
+      showFeedback(`Updated variants for "${editingVariantProd.name}".`);
+      setIsVariantModalOpen(false);
+      setEditingVariantProd(null);
     } catch (err: any) {
-      showFeedback(err.message || 'Failed to approve request.', true);
+      showFeedback(err.message || 'Failed to update variants.', true);
     } finally {
       setIsSubmitting(false);
     }
@@ -344,7 +443,7 @@ export const AdminScreen: React.FC = () => {
   const handleOpenEditProduct = (prod: Product) => {
     setEditingProd(prod);
     setProdNameInput(prod.name);
-    setProdMrpInput(prod.mrp);
+    setProdMrpInput(prod.mrp || (prod.variants && prod.variants[0]?.mrp) || 20);
     setProdDescInput(prod.description || '');
     setProdCatInput(prod.category);
     setProdSubInput(prod.subcategory || 'General');
@@ -615,13 +714,23 @@ export const AdminScreen: React.FC = () => {
                                           <h4 className="text-xs font-extrabold text-white truncate">
                                             {prod.name}
                                           </h4>
-                                          <span className="text-[10px] text-primary-container font-mono block">
-                                            MRP ₹{prod.mrp} • ID: {prod.id}
+                                          <span className="text-[10px] text-primary-container font-mono block truncate">
+                                            {prod.variants && prod.variants.length > 0
+                                              ? prod.variants.map((v) => `${v.size}: ₹${v.mrp}`).join(' • ')
+                                              : `MRP ₹${prod.mrp}`}
                                           </span>
                                         </div>
                                       </div>
 
                                       <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenVariantModal(prod)}
+                                          className="text-[10px] font-extrabold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 px-2 py-1 rounded-lg cursor-pointer"
+                                          title="Manage Pack Size Variants"
+                                        >
+                                          Variants
+                                        </button>
                                         <button
                                           type="button"
                                           onClick={() => handleOpenEditProduct(prod)}
@@ -725,7 +834,7 @@ export const AdminScreen: React.FC = () => {
           <div className="bg-[#121414] border border-primary-container/40 rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">
-                Approve Product
+                Approve Product Request
               </h2>
               <button
                 type="button"
@@ -738,81 +847,146 @@ export const AdminScreen: React.FC = () => {
 
             <div className="bg-[#1e2020] rounded-2xl p-3.5 border border-[#333535]">
               <span className="text-[10px] uppercase font-bold text-on-surface-variant block">
-                Submitted Product Name
+                Submitted Request Details
               </span>
-              <span className="text-base font-extrabold text-primary-container">
+              <div className="text-base font-extrabold text-primary-container">
                 {selectedRequest.productName}
-              </span>
+              </div>
+              <div className="text-xs text-white font-mono mt-0.5">
+                Pack Size: {selectedRequest.size || 'Standard'} • Submitted Price: ₹{selectedRequest.sellingPrice || selectedRequest.mrp || 20}
+              </div>
+            </div>
+
+            {/* Approval Mode Toggle */}
+            <div className="flex bg-[#1e2020] rounded-xl p-1 border border-[#333535]">
+              <button
+                type="button"
+                onClick={() => setApproveMode('new')}
+                className={`flex-1 py-2 rounded-lg font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                  approveMode === 'new'
+                    ? 'bg-primary-container text-black'
+                    : 'text-on-surface-variant hover:text-white'
+                }`}
+              >
+                Create New Catalog Product
+              </button>
+              <button
+                type="button"
+                onClick={() => setApproveMode('variant')}
+                className={`flex-1 py-2 rounded-lg font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                  approveMode === 'variant'
+                    ? 'bg-primary-container text-black'
+                    : 'text-on-surface-variant hover:text-white'
+                }`}
+              >
+                Add as Variant to Existing Item
+              </button>
             </div>
 
             <form onSubmit={handleConfirmApproval} className="flex flex-col gap-4">
-              {/* Category Select */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
-                  Assign Category
-                </label>
-                <select
-                  value={approveCategory}
-                  onChange={(e) => {
-                    const catName = e.target.value as ProductCategory;
-                    setApproveCategory(catName);
-                    const matchedCat = categories.find((c) => c.name === catName);
-                    setApproveSubcategory(matchedCat?.subcategories[0] || 'General');
-                  }}
-                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container text-sm cursor-pointer"
-                >
-                  {categories.map((c) => (
-                    <option key={c.name} value={c.name} className="bg-[#121414] text-white">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {approveMode === 'new' ? (
+                <>
+                  {/* Category Select */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                      Assign Category
+                    </label>
+                    <select
+                      value={approveCategory}
+                      onChange={(e) => {
+                        const catName = e.target.value as ProductCategory;
+                        setApproveCategory(catName);
+                        const matchedCat = categories.find((c) => c.name === catName);
+                        setApproveSubcategory(matchedCat?.subcategories[0] || 'General');
+                      }}
+                      className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm cursor-pointer"
+                    >
+                      {categories.map((c) => (
+                        <option key={c.name} value={c.name} className="bg-[#121414] text-white">
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Subcategory Select or Create */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-center">
+                  {/* Subcategory Select or Create */}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                        Assign Subcategory
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsApproveNewSub(!isApproveNewSub)}
+                        className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                      >
+                        {isApproveNewSub ? 'Use Existing' : '+ New Subcategory'}
+                      </button>
+                    </div>
+
+                    {!isApproveNewSub ? (
+                      <select
+                        value={approveSubcategory}
+                        onChange={(e) => setApproveSubcategory(e.target.value)}
+                        className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm cursor-pointer"
+                      >
+                        {(
+                          categories.find((c) => c.name === approveCategory)?.subcategories || ['General']
+                        ).map((sub) => (
+                          <option key={sub} value={sub} className="bg-[#121414] text-white">
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="Enter new subcategory name"
+                        value={approveNewSubName}
+                        onChange={(e) => setApproveNewSubName(e.target.value)}
+                        className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
+                      />
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* Select Existing Product for Variant Placement */
+                <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
-                    Assign Subcategory
+                    Select Existing Catalog Product
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setIsApproveNewSub(!isApproveNewSub)}
-                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
-                  >
-                    {isApproveNewSub ? 'Use Existing' : '+ New Subcategory'}
-                  </button>
-                </div>
-
-                {!isApproveNewSub ? (
                   <select
-                    value={approveSubcategory}
-                    onChange={(e) => setApproveSubcategory(e.target.value)}
-                    className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container text-sm cursor-pointer"
+                    value={targetExistingProductId}
+                    onChange={(e) => setTargetExistingProductId(e.target.value)}
+                    className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm cursor-pointer"
                   >
-                    {(
-                      categories.find((c) => c.name === approveCategory)?.subcategories || ['General']
-                    ).map((sub) => (
-                      <option key={sub} value={sub} className="bg-[#121414] text-white">
-                        {sub}
+                    {allProductsList.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-[#121414] text-white">
+                        {p.name} ({p.category})
                       </option>
                     ))}
                   </select>
-                ) : (
-                  <input
-                    type="text"
-                    placeholder="Enter new subcategory name"
-                    value={approveNewSubName}
-                    onChange={(e) => setApproveNewSubName(e.target.value)}
-                    className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container text-sm"
-                  />
-                )}
+                </div>
+              )}
+
+              {/* Pack Size Label */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  Pack Size Label
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 50g, 90g, 1L"
+                  value={approveSize}
+                  onChange={(e) => setApproveSize(e.target.value)}
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
+                />
               </div>
 
               {/* MRP Field */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
-                  Assigned MRP (₹)
+                  Variant MRP (₹)
                 </label>
                 <input
                   type="number"
@@ -820,7 +994,7 @@ export const AdminScreen: React.FC = () => {
                   max="1000"
                   value={approveMrp}
                   onChange={(e) => setApproveMrp(parseInt(e.target.value, 10) || 0)}
-                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container text-sm"
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
                 />
               </div>
 
@@ -837,7 +1011,108 @@ export const AdminScreen: React.FC = () => {
                   disabled={isSubmitting}
                   className="flex-1 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-all cursor-pointer"
                 >
-                  {isSubmitting ? 'Approving...' : 'Confirm & Insert'}
+                  {isSubmitting ? 'Approving...' : approveMode === 'new' ? 'Create Product' : 'Add Variant'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MANAGE VARIANTS MODAL */}
+      {isVariantModalOpen && editingVariantProd && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#121414] border border-primary-container/40 rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">
+                  Manage Pack Size Variants
+                </h2>
+                <p className="text-xs font-bold text-primary-container">
+                  {editingVariantProd.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVariantModalOpen(false)}
+                className="text-on-surface-variant hover:text-white w-8 h-8 rounded-full bg-[#1e2020] flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVariants} className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                  Pack Size Variants ({variantInputs.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAddVariantInput}
+                  className="text-xs font-extrabold text-primary-container bg-primary-container/10 border border-primary-container/30 px-3 py-1 rounded-full uppercase hover:bg-primary-container hover:text-black transition-colors cursor-pointer"
+                >
+                  + Add Variant
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2.5 max-h-[40vh] overflow-y-auto pr-1">
+                {variantInputs.map((v, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#1e2020] border border-[#333535] rounded-2xl p-3 flex items-center gap-2"
+                  >
+                    <div className="flex-1">
+                      <label className="text-[10px] text-on-surface-variant block font-bold">
+                        Size / Weight Label
+                      </label>
+                      <input
+                        type="text"
+                        value={v.size}
+                        onChange={(e) => handleUpdateVariantInput(idx, 'size', e.target.value)}
+                        className="w-full bg-[#121414] border border-[#333535] rounded-xl px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-primary-container"
+                        placeholder="e.g. 50g"
+                      />
+                    </div>
+
+                    <div className="w-24">
+                      <label className="text-[10px] text-on-surface-variant block font-bold">
+                        MRP (₹)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={v.mrp}
+                        onChange={(e) => handleUpdateVariantInput(idx, 'mrp', parseInt(e.target.value, 10) || 0)}
+                        className="w-full bg-[#121414] border border-[#333535] rounded-xl px-2.5 py-1.5 text-xs text-primary-container font-mono font-bold focus:outline-none focus:border-primary-container"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteVariantInput(idx, v.size)}
+                      className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 flex items-center justify-center cursor-pointer shrink-0 mt-3"
+                      title="Delete Variant (Live listing safeguard active)"
+                    >
+                      <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsVariantModalOpen(false)}
+                  className="flex-1 py-3 rounded-full font-bold text-xs uppercase tracking-wider text-on-surface-variant bg-[#1e2020] hover:bg-[#282a2b] transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-all cursor-pointer"
+                >
+                  {isSubmitting ? 'Saving...' : 'Save All Variants'}
                 </button>
               </div>
             </form>

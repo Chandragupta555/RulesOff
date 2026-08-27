@@ -128,12 +128,17 @@ export const subscribeToMasterProducts = (
     (snap) => {
       const items: Product[] = snap.docs.map((d) => {
         const data = d.data();
+        const variants = Array.isArray(data.variants) && data.variants.length > 0
+          ? data.variants
+          : [{ size: 'Standard', mrp: data.mrp || 20 }];
+
         return {
           id: d.id,
           name: data.name || d.id,
           category: data.category as ProductCategory,
           subcategory: data.subcategory || 'General',
-          mrp: data.mrp || 20,
+          variants,
+          mrp: variants[0]?.mrp || 20,
           imageUrl:
             data.imageUrl ||
             'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
@@ -341,7 +346,8 @@ export const createProductDocInMaster = async (
     name: cleanName,
     category: productData.category,
     subcategory: productData.subcategory || 'General',
-    mrp: Math.max(1, productData.mrp),
+    mrp: Math.max(1, productData.mrp || 20),
+    variants: productData.variants || [{ size: 'Standard', mrp: productData.mrp || 20 }],
     imageUrl:
       productData.imageUrl ||
       'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
@@ -403,4 +409,53 @@ export const deleteProductDocFromMaster = async (
 
   const prodRef = doc(db, MASTER_PRODUCTS_COLLECTION, productId);
   await deleteDoc(prodRef);
+};
+
+/**
+ * Update variants array for a master catalog product.
+ */
+export const updateProductVariantsInMaster = async (
+  productId: string,
+  variants: { size: string; mrp: number }[]
+): Promise<void> => {
+  const prodRef = doc(db, MASTER_PRODUCTS_COLLECTION, productId);
+  await updateDoc(prodRef, {
+    variants,
+    updatedAt: Date.now(),
+  });
+};
+
+/**
+ * Remove a specific variant size from a master catalog product with live listings check.
+ */
+export const removeVariantFromProductDoc = async (
+  productId: string,
+  variantSize: string,
+  currentVariants: { size: string; mrp: number }[]
+): Promise<void> => {
+  // Safeguard: Check if live listings currently reference this productId + variantSize
+  const listingsColRef = collection(db, LISTINGS_COLLECTION);
+  const q = query(
+    listingsColRef,
+    where('productId', '==', productId),
+    where('variantSize', '==', variantSize)
+  );
+  const snap = await getDocs(q);
+
+  if (!snap.empty) {
+    throw new Error(
+      `Cannot remove variant '${variantSize}' because ${snap.size} active listing(s) in Firestore currently reference this size variant.`
+    );
+  }
+
+  const updatedVariants = currentVariants.filter((v) => v.size !== variantSize);
+  if (updatedVariants.length === 0) {
+    throw new Error('A product must have at least one size variant.');
+  }
+
+  const prodRef = doc(db, MASTER_PRODUCTS_COLLECTION, productId);
+  await updateDoc(prodRef, {
+    variants: updatedVariants,
+    updatedAt: Date.now(),
+  });
 };

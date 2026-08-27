@@ -59,10 +59,11 @@ export const CatalogScreen: React.FC = () => {
 
     const totalUnits = matchingListings.reduce((sum, l) => sum + l.quantity, 0);
     const awakeRooms = new Set(matchingListings.map((l) => l.sellerRoom));
+    const productMrp = (product.variants && product.variants[0]?.mrp) || product.mrp || 20;
     const lowestPrice =
       matchingListings.length > 0
         ? Math.min(...matchingListings.map((l) => l.price))
-        : product.mrp;
+        : productMrp;
 
     let badge: 'Almost Gone' | 'Last One' | 'Out of Stock' | undefined = undefined;
     if (totalUnits === 0) {
@@ -301,9 +302,9 @@ export const CatalogScreen: React.FC = () => {
                         <span className="text-sm font-extrabold text-primary-container font-mono">
                           ₹{agg.lowestPrice}
                         </span>
-                        {agg.lowestPrice < agg.product.mrp && (
+                        {agg.lowestPrice < ((agg.product.variants && agg.product.variants[0]?.mrp) || agg.product.mrp || 20) && (
                           <span className="text-[10px] text-on-surface-variant line-through font-mono">
-                            ₹{agg.product.mrp}
+                            ₹{(agg.product.variants && agg.product.variants[0]?.mrp) || agg.product.mrp || 20}
                           </span>
                         )}
                       </div>

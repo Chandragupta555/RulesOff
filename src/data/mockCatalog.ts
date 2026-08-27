@@ -20,6 +20,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Lay's Classic Salted",
     category: 'Chips & Wafers',
     subcategory: "Lay's",
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'lunch_dining',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -30,6 +32,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Lay's Magic Masala",
     category: 'Chips & Wafers',
     subcategory: "Lay's",
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'local_fire_department',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -40,6 +44,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Lay's Spanish Tomato Tango",
     category: 'Chips & Wafers',
     subcategory: "Lay's",
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'nutrition',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -50,6 +56,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Lay's American Cream & Onion",
     category: 'Chips & Wafers',
     subcategory: "Lay's",
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'set_meal',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -60,6 +68,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Uncle Chipps',
     category: 'Chips & Wafers',
     subcategory: 'Uncle Chipps',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'lunch_dining',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -70,6 +80,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bingo Original',
     category: 'Chips & Wafers',
     subcategory: 'Bingo',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'category',
     imageUrl: 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?auto=format&fit=crop&w=800&q=80',
@@ -80,6 +92,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Pringles',
     category: 'Chips & Wafers',
     subcategory: 'Pringles',
+    variants: [{ size: '100g', mrp: 110 }],
+
     mrp: 110,
     iconName: 'inventory_2',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -90,6 +104,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Kurkure Masala Munch',
     category: 'Chips & Wafers',
     subcategory: 'Kurkure',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'local_fire_department',
     imageUrl: 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=800&q=80',
@@ -100,6 +116,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Kurkure Green Chutney',
     category: 'Chips & Wafers',
     subcategory: 'Kurkure',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'grass',
     imageUrl: 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=800&q=80',
@@ -110,6 +128,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Kurkure Solid Masti',
     category: 'Chips & Wafers',
     subcategory: 'Kurkure',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'star',
     imageUrl: 'https://images.unsplash.com/photo-1621447504864-d8686e12698c?auto=format&fit=crop&w=800&q=80',
@@ -120,6 +140,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bingo Mad Angles',
     category: 'Chips & Wafers',
     subcategory: 'Bingo Mad Angles',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'change_history',
     imageUrl: 'https://images.unsplash.com/photo-1600952841320-db92ec4047ca?auto=format&fit=crop&w=800&q=80',
@@ -130,6 +152,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Too Yumm Multigrain',
     category: 'Chips & Wafers',
     subcategory: 'Too Yumm',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'grain',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -140,6 +164,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Too Yumm Peri Peri',
     category: 'Chips & Wafers',
     subcategory: 'Too Yumm',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'local_fire_department',
     imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=800&q=80',
@@ -150,6 +176,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Doritos Nacho Cheese',
     category: 'Chips & Wafers',
     subcategory: 'Doritos',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'details',
     imageUrl: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?auto=format&fit=crop&w=800&q=80',
@@ -160,6 +188,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Doritos Tangy Tomato',
     category: 'Chips & Wafers',
     subcategory: 'Doritos',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'details',
     imageUrl: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?auto=format&fit=crop&w=800&q=80',
@@ -170,6 +200,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Cornitos Nacho Chips',
     category: 'Chips & Wafers',
     subcategory: 'Cornitos',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'change_history',
     imageUrl: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?auto=format&fit=crop&w=800&q=80',
@@ -182,6 +214,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Haldiram's Aloo Bhujia",
     category: 'Namkeen & Bhujia',
     subcategory: 'Bhujia & Mixture',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'grain',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -192,6 +226,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Haldiram's Bikaneri Bhujia",
     category: 'Namkeen & Bhujia',
     subcategory: 'Bhujia & Mixture',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'grain',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -202,6 +238,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bikaji Bhujia',
     category: 'Namkeen & Bhujia',
     subcategory: 'Bhujia & Mixture',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'grain',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -212,6 +250,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Haldiram's Navratan Mix",
     category: 'Namkeen & Bhujia',
     subcategory: 'Bhujia & Mixture',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'grid_view',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -222,6 +262,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Haldiram's Punjabi Tadka",
     category: 'Namkeen & Bhujia',
     subcategory: 'Bhujia & Mixture',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'local_fire_department',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -232,6 +274,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bikaji Bikaneri Mixture',
     category: 'Namkeen & Bhujia',
     subcategory: 'Bhujia & Mixture',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'grain',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -242,6 +286,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Haldiram's Masala Peanuts",
     category: 'Namkeen & Bhujia',
     subcategory: 'Roasted Snacks',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'blur_circular',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -252,6 +298,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'DFM Roasted Chana',
     category: 'Namkeen & Bhujia',
     subcategory: 'Roasted Snacks',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'grain',
     imageUrl: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=800&q=80',
@@ -264,6 +312,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Maggi 2-Min Masala',
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '25g', mrp: 14 }],
+
     mrp: 14,
     iconName: 'ramen_dining',
     imageUrl: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80',
@@ -274,6 +324,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Maggi 2-Min Chicken',
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '50g', mrp: 25 }],
+
     mrp: 25,
     iconName: 'ramen_dining',
     imageUrl: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80',
@@ -284,6 +336,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Yippee Magic Masala',
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '25g', mrp: 15 }],
+
     mrp: 15,
     iconName: 'ramen_dining',
     imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80',
@@ -294,6 +348,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Top Ramen',
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'ramen_dining',
     imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
@@ -304,6 +360,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Nissin Cup Noodles',
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '100g', mrp: 50 }],
+
     mrp: 50,
     iconName: 'soup_kitchen',
     imageUrl: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
@@ -314,6 +372,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Ching's Secret Noodles",
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'ramen_dining',
     imageUrl: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80',
@@ -324,6 +384,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Maggi Oats Noodles',
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '50g', mrp: 25 }],
+
     mrp: 25,
     iconName: 'ramen_dining',
     imageUrl: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80',
@@ -334,6 +396,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'MTR Poha / Upma',
     category: 'Instant Food',
     subcategory: 'Ready-to-Eat',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'set_meal',
     imageUrl: 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=800&q=80',
@@ -344,6 +408,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Yoga Bar Instant Oats',
     category: 'Instant Food',
     subcategory: 'Ready-to-Eat',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'set_meal',
     imageUrl: 'https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=800&q=80',
@@ -354,6 +420,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Maggi Pazzta',
     category: 'Instant Food',
     subcategory: 'Ready-to-Eat',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'dinner_dining',
     imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=800&q=80',
@@ -366,6 +434,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Parle-G',
     category: 'Biscuits & Cookies',
     subcategory: 'Everyday & Tea Biscuits',
+    variants: [{ size: '25g', mrp: 10 }],
+
     mrp: 10,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -376,6 +446,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Britannia Marie Gold',
     category: 'Biscuits & Cookies',
     subcategory: 'Everyday & Tea Biscuits',
+    variants: [{ size: '25g', mrp: 15 }],
+
     mrp: 15,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -386,6 +458,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Tiger Krunch',
     category: 'Biscuits & Cookies',
     subcategory: 'Everyday & Tea Biscuits',
+    variants: [{ size: '25g', mrp: 10 }],
+
     mrp: 10,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -396,6 +470,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Krackjack',
     category: 'Biscuits & Cookies',
     subcategory: 'Everyday & Tea Biscuits',
+    variants: [{ size: '25g', mrp: 15 }],
+
     mrp: 15,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -406,6 +482,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Oreo Original',
     category: 'Biscuits & Cookies',
     subcategory: 'Cream & Choco',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
@@ -416,6 +494,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Oreo Choco Crème',
     category: 'Biscuits & Cookies',
     subcategory: 'Cream & Choco',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
@@ -426,6 +506,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Britannia Bourbon',
     category: 'Biscuits & Cookies',
     subcategory: 'Cream & Choco',
+    variants: [{ size: '50g', mrp: 25 }],
+
     mrp: 25,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80',
@@ -436,6 +518,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Dark Fantasy Choco Fills',
     category: 'Biscuits & Cookies',
     subcategory: 'Cream & Choco',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=800&q=80',
@@ -446,6 +530,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Dark Fantasy Truffle',
     category: 'Biscuits & Cookies',
     subcategory: 'Cream & Choco',
+    variants: [{ size: '100g', mrp: 50 }],
+
     mrp: 50,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=800&q=80',
@@ -456,6 +542,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Hide & Seek Fab / Bourbon',
     category: 'Biscuits & Cookies',
     subcategory: 'Cream & Choco',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80',
@@ -466,6 +554,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Sunfeast Farmlite Digestive',
     category: 'Biscuits & Cookies',
     subcategory: 'Healthy & Digestive',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -476,6 +566,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "McVitie's Digestive",
     category: 'Biscuits & Cookies',
     subcategory: 'Healthy & Digestive',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -486,6 +578,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Good Day Cashew / Butter',
     category: 'Biscuits & Cookies',
     subcategory: 'Premium Cookies',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -496,6 +590,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Unibic Cookies',
     category: 'Biscuits & Cookies',
     subcategory: 'Premium Cookies',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'cookie',
     imageUrl: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=800&q=80',
@@ -508,6 +604,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Cadbury Dairy Milk Silk',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '100g', mrp: 80 }],
+
     mrp: 80,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
@@ -518,6 +616,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Cadbury Dairy Milk Fruit & Nut',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '100g', mrp: 90 }],
+
     mrp: 90,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
@@ -528,6 +628,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Cadbury Dairy Milk Crackle',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '100g', mrp: 90 }],
+
     mrp: 90,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
@@ -538,6 +640,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Nestlé Milkybar',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
@@ -548,6 +652,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'KitKat 4-Finger',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=800&q=80',
@@ -558,6 +664,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'KitKat Chunky',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '100g', mrp: 50 }],
+
     mrp: 50,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=800&q=80',
@@ -568,6 +676,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Munch',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '25g', mrp: 10 }],
+
     mrp: 10,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=800&q=80',
@@ -578,6 +688,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Perk',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '25g', mrp: 10 }],
+
     mrp: 10,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1582293041079-7814c2f12063?auto=format&fit=crop&w=800&q=80',
@@ -588,6 +700,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Snickers',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=800&q=80',
@@ -598,6 +712,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Cadbury 5 Star',
     category: 'Chocolates & Sweets',
     subcategory: 'Chocolate Bars',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'cake',
     imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80',
@@ -608,6 +724,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Cadbury Gems',
     category: 'Chocolates & Sweets',
     subcategory: 'Gems & Candies',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'radio_button_checked',
     imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
@@ -618,6 +736,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "M&M's",
     category: 'Chocolates & Sweets',
     subcategory: 'Gems & Candies',
+    variants: [{ size: '100g', mrp: 80 }],
+
     mrp: 80,
     iconName: 'radio_button_checked',
     imageUrl: 'https://images.unsplash.com/photo-1548907040-4baa42d10919?auto=format&fit=crop&w=800&q=80',
@@ -630,6 +750,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Coca-Cola',
     category: 'Cold Drinks & Juices',
     subcategory: 'Carbonated Soft Drinks',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
@@ -640,6 +762,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Thums Up',
     category: 'Cold Drinks & Juices',
     subcategory: 'Carbonated Soft Drinks',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=800&q=80',
@@ -650,6 +774,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Pepsi',
     category: 'Cold Drinks & Juices',
     subcategory: 'Carbonated Soft Drinks',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
@@ -660,6 +786,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Sprite',
     category: 'Cold Drinks & Juices',
     subcategory: 'Carbonated Soft Drinks',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
@@ -670,6 +798,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: '7Up',
     category: 'Cold Drinks & Juices',
     subcategory: 'Carbonated Soft Drinks',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
@@ -680,6 +810,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Limca',
     category: 'Cold Drinks & Juices',
     subcategory: 'Carbonated Soft Drinks',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
@@ -690,6 +822,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Frooti',
     category: 'Cold Drinks & Juices',
     subcategory: 'Fruit Juices & Drinks',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=800&q=80',
@@ -700,6 +834,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Real Fruit Juice',
     category: 'Cold Drinks & Juices',
     subcategory: 'Fruit Juices & Drinks',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=800&q=80',
@@ -710,6 +846,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Slice Mango',
     category: 'Cold Drinks & Juices',
     subcategory: 'Fruit Juices & Drinks',
+    variants: [{ size: '50g', mrp: 25 }],
+
     mrp: 25,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=800&q=80',
@@ -720,6 +858,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Maaza',
     category: 'Cold Drinks & Juices',
     subcategory: 'Fruit Juices & Drinks',
+    variants: [{ size: '50g', mrp: 25 }],
+
     mrp: 25,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=800&q=80',
@@ -730,6 +870,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bisleri',
     category: 'Cold Drinks & Juices',
     subcategory: 'Water & Soda',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'water_drop',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -740,6 +882,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bailley Soda',
     category: 'Cold Drinks & Juices',
     subcategory: 'Water & Soda',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'local_drink',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -752,6 +896,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Red Bull',
     category: 'Energy & Health Drinks',
     subcategory: 'Energy Drinks',
+    variants: [{ size: '100g', mrp: 125 }],
+
     mrp: 125,
     iconName: 'bolt',
     imageUrl: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=800&q=80',
@@ -762,6 +908,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Sting',
     category: 'Energy & Health Drinks',
     subcategory: 'Energy Drinks',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'bolt',
     imageUrl: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=800&q=80',
@@ -772,6 +920,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Monster Energy',
     category: 'Energy & Health Drinks',
     subcategory: 'Energy Drinks',
+    variants: [{ size: '100g', mrp: 125 }],
+
     mrp: 125,
     iconName: 'bolt',
     imageUrl: 'https://images.unsplash.com/photo-1622543925917-763c34d1a86e?auto=format&fit=crop&w=800&q=80',
@@ -782,6 +932,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Bournvita',
     category: 'Energy & Health Drinks',
     subcategory: 'Health Drink Mixes',
+    variants: [{ size: '100g', mrp: 120 }],
+
     mrp: 120,
     iconName: 'local_cafe',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -792,6 +944,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Horlicks',
     category: 'Energy & Health Drinks',
     subcategory: 'Health Drink Mixes',
+    variants: [{ size: '100g', mrp: 120 }],
+
     mrp: 120,
     iconName: 'local_cafe',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -802,6 +956,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Complan',
     category: 'Energy & Health Drinks',
     subcategory: 'Health Drink Mixes',
+    variants: [{ size: '100g', mrp: 120 }],
+
     mrp: 120,
     iconName: 'local_cafe',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -814,6 +970,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Kool Chocolate',
     category: 'Dairy & Milk-Based',
     subcategory: 'Flavored Milk & Coffee',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'water_drop',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -824,6 +982,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Kool Kesar',
     category: 'Dairy & Milk-Based',
     subcategory: 'Flavored Milk & Coffee',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'water_drop',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -834,6 +994,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Nescafé Cold Coffee',
     category: 'Dairy & Milk-Based',
     subcategory: 'Flavored Milk & Coffee',
+    variants: [{ size: '100g', mrp: 50 }],
+
     mrp: 50,
     iconName: 'local_cafe',
     imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=800&q=80',
@@ -844,6 +1006,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Masti Lassi',
     category: 'Dairy & Milk-Based',
     subcategory: 'Lassi & Yogurt',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'water_drop',
     imageUrl: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=800&q=80',
@@ -854,6 +1018,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Mother Dairy Lassi',
     category: 'Dairy & Milk-Based',
     subcategory: 'Lassi & Yogurt',
+    variants: [{ size: '50g', mrp: 20 }],
+
     mrp: 20,
     iconName: 'water_drop',
     imageUrl: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=800&q=80',
@@ -864,6 +1030,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Epigamia Greek Yogurt',
     category: 'Dairy & Milk-Based',
     subcategory: 'Lassi & Yogurt',
+    variants: [{ size: '100g', mrp: 50 }],
+
     mrp: 50,
     iconName: 'icecream',
     imageUrl: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=800&q=80',
@@ -874,6 +1042,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Yoghurt',
     category: 'Dairy & Milk-Based',
     subcategory: 'Lassi & Yogurt',
+    variants: [{ size: '50g', mrp: 30 }],
+
     mrp: 30,
     iconName: 'icecream',
     imageUrl: 'https://images.unsplash.com/photo-1528751014936-863e6e7a319c?auto=format&fit=crop&w=800&q=80',
@@ -886,6 +1056,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Chocobar',
     category: 'Ice Cream & Frozen Desserts',
     subcategory: 'Ice Cream Bars & Cones',
+    variants: [{ size: '50g', mrp: 25 }],
+
     mrp: 25,
     iconName: 'icecream',
     imageUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
@@ -896,6 +1068,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: "Kwality Wall's Cornetto",
     category: 'Ice Cream & Frozen Desserts',
     subcategory: 'Ice Cream Bars & Cones',
+    variants: [{ size: '100g', mrp: 40 }],
+
     mrp: 40,
     iconName: 'icecream',
     imageUrl: 'https://images.unsplash.com/photo-1557142046-c704a3adf364?auto=format&fit=crop&w=800&q=80',
@@ -906,6 +1080,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Vanilla Magnum',
     category: 'Ice Cream & Frozen Desserts',
     subcategory: 'Ice Cream Bars & Cones',
+    variants: [{ size: '100g', mrp: 90 }],
+
     mrp: 90,
     iconName: 'icecream',
     imageUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
@@ -916,6 +1092,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Amul Tub Butterscotch/Chocolate',
     category: 'Ice Cream & Frozen Desserts',
     subcategory: 'Tubs & Packs',
+    variants: [{ size: '100g', mrp: 150 }],
+
     mrp: 150,
     iconName: 'icecream',
     imageUrl: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80',
@@ -928,6 +1106,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Britannia Bread',
     category: 'Bread, Buns & Bakery',
     subcategory: 'Bakery & Breads',
+    variants: [{ size: '100g', mrp: 45 }],
+
     mrp: 45,
     iconName: 'bakery_dining',
     imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
@@ -938,6 +1118,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Modern Bread',
     category: 'Bread, Buns & Bakery',
     subcategory: 'Bakery & Breads',
+    variants: [{ size: '100g', mrp: 45 }],
+
     mrp: 45,
     iconName: 'bakery_dining',
     imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
@@ -948,6 +1130,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Britannia Rusk',
     category: 'Bread, Buns & Bakery',
     subcategory: 'Bakery & Breads',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'bakery_dining',
     imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
@@ -958,6 +1142,8 @@ export const MOCK_PRODUCTS: Product[] = [
     name: 'Parle Rusk',
     category: 'Bread, Buns & Bakery',
     subcategory: 'Bakery & Breads',
+    variants: [{ size: '100g', mrp: 35 }],
+
     mrp: 35,
     iconName: 'bakery_dining',
     imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
@@ -978,6 +1164,8 @@ export const getProductById = (id: string, customProducts: Product[] = []): Prod
     name: id.replace(/[-_]/g, ' '),
     category: 'Instant Food',
     subcategory: 'Noodles',
+    variants: [{ size: '100g', mrp: 50 }],
+
     mrp: 50,
     iconName: 'shopping_bag',
     imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',

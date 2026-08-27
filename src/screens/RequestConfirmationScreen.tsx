@@ -68,7 +68,8 @@ export const RequestConfirmationScreen: React.FC = () => {
     ? allProducts.find((p) => p.id === listing.productId)
     : null;
 
-  const displayProductName = listing?.unverifiedProductName || listing?.productName || 'Product';
+  const rawName = listing?.unverifiedProductName || listing?.productName || 'Product';
+  const displayProductName = `${rawName}${listing?.variantSize ? ` (${listing.variantSize})` : ''}`;
   const displayImageUrl =
     matchedProduct?.imageUrl ||
     'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';

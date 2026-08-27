@@ -4,6 +4,7 @@ import {
   setDoc,
   addDoc,
   updateDoc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -12,7 +13,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from './config';
-import { Product, ProductCategory } from '../types/catalog';
+import { Product, ProductCategory, ProductVariant } from '../types/catalog';
 
 export interface ProductRequestDoc {
   id?: string;
@@ -22,6 +23,8 @@ export interface ProductRequestDoc {
   createdAt: number;
   assignedCategory?: ProductCategory;
   assignedSubcategory?: string;
+  size?: string;
+  sellingPrice?: number;
   mrp?: number;
 }
 
@@ -30,7 +33,7 @@ export interface ApprovedProductDoc {
   name: string;
   category: ProductCategory;
   subcategory: string;
-  mrp: number;
+  variants: ProductVariant[];
   approvedAt: number;
   requestId?: string;
 }
@@ -46,15 +49,23 @@ const LISTINGS_COLLECTION = 'listings';
  */
 export const createProductRequestDoc = async (
   productName: string,
-  submittedBy: string
+  submittedBy: string,
+  size?: string,
+  sellingPrice?: number,
+  mrp?: number
 ): Promise<string> => {
   const colRef = collection(db, PRODUCT_REQUESTS_COLLECTION);
-  const docRef = await addDoc(colRef, {
+  const payload: any = {
     productName: productName.trim(),
     status: 'pending',
     submittedBy,
     createdAt: Date.now(),
-  });
+  };
+  if (size && size.trim()) payload.size = size.trim();
+  if (sellingPrice) payload.sellingPrice = sellingPrice;
+  if (mrp) payload.mrp = mrp;
+
+  const docRef = await addDoc(colRef, payload);
   return docRef.id;
 };
 
@@ -96,13 +107,18 @@ export const subscribeToApprovedProducts = (
     colRef,
     (snap) => {
       const items: Product[] = snap.docs.map((d) => {
-        const data = d.data() as ApprovedProductDoc;
+        const data = d.data() as any;
+        const variants: ProductVariant[] = Array.isArray(data.variants) && data.variants.length > 0
+          ? data.variants
+          : [{ size: 'Standard', mrp: data.mrp || 20 }];
+
         return {
           id: d.id,
           name: data.name,
           category: data.category,
           subcategory: data.subcategory,
-          mrp: data.mrp || 20,
+          variants,
+          mrp: variants[0]?.mrp || 20,
           imageUrl:
             'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
           iconName: 'new_releases',
@@ -119,22 +135,21 @@ export const subscribeToApprovedProducts = (
 };
 
 /**
- * Admin action: Approve a pending product request.
- * 1. Creates a permanent entry in `masterProducts` and `approvedProducts`.
- * 2. Ensures `subcategory` exists in `catalogTaxonomy`.
- * 3. Updates status of `productRequests` doc to 'approved'.
- * 4. Batch updates any existing listings using this product name to remove 'isUnverified'.
+ * Admin action: Approve a pending product request as a brand-new catalog product.
  */
 export const approveProductRequestDoc = async (
   requestId: string,
   productName: string,
   category: ProductCategory,
   subcategory: string,
+  size: string,
   mrp: number
 ): Promise<string> => {
   const cleanName = productName.trim();
   const cleanSub = subcategory.trim();
+  const cleanSize = (size || 'Standard').trim();
   const slugId = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const variant: ProductVariant = { size: cleanSize, mrp: Math.max(1, mrp) };
 
   // 1. Write to masterProducts collection
   const masterDocRef = doc(db, MASTER_PRODUCTS_COLLECTION, slugId);
@@ -142,7 +157,7 @@ export const approveProductRequestDoc = async (
     name: cleanName,
     category,
     subcategory: cleanSub,
-    mrp: Math.max(1, mrp),
+    variants: [variant],
     imageUrl:
       'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
     iconName: 'new_releases',
@@ -157,7 +172,7 @@ export const approveProductRequestDoc = async (
     name: cleanName,
     category,
     subcategory: cleanSub,
-    mrp: Math.max(1, mrp),
+    variants: [variant],
     approvedAt: Date.now(),
     requestId,
   });
@@ -195,6 +210,7 @@ export const approveProductRequestDoc = async (
     status: 'approved',
     assignedCategory: category,
     assignedSubcategory: cleanSub,
+    size: cleanSize,
     mrp: Math.max(1, mrp),
   });
 
@@ -219,6 +235,8 @@ export const approveProductRequestDoc = async (
           isUnverified: false,
           productId: slugId,
           productName: cleanName,
+          variantSize: cleanSize,
+          mrp: Math.max(1, mrp),
         });
       });
       await batch.commit();
@@ -228,6 +246,83 @@ export const approveProductRequestDoc = async (
   }
 
   return slugId;
+};
+
+/**
+ * Admin action: Approve a pending product request by adding it as a NEW VARIANT onto an EXISTING catalog product.
+ */
+export const approveProductRequestAsVariantDoc = async (
+  requestId: string,
+  existingProductId: string,
+  size: string,
+  mrp: number
+): Promise<void> => {
+  const cleanSize = (size || 'Standard').trim();
+  const newVariant: ProductVariant = { size: cleanSize, mrp: Math.max(1, mrp) };
+
+  // 1. Fetch existing master product
+  const masterDocRef = doc(db, MASTER_PRODUCTS_COLLECTION, existingProductId);
+  const masterSnap = await getDoc(masterDocRef);
+
+  let currentVariants: ProductVariant[] = [];
+  let prodName = existingProductId;
+
+  if (masterSnap.exists()) {
+    const data = masterSnap.data() as any;
+    prodName = data.name || existingProductId;
+    currentVariants = Array.isArray(data.variants) && data.variants.length > 0
+      ? data.variants
+      : [{ size: 'Standard', mrp: data.mrp || 20 }];
+  } else {
+    currentVariants = [{ size: 'Standard', mrp: Math.max(1, mrp) }];
+  }
+
+  // Check if size already exists, update or append
+  const existingIdx = currentVariants.findIndex((v) => v.size.toLowerCase() === cleanSize.toLowerCase());
+  let updatedVariants: ProductVariant[] = [];
+
+  if (existingIdx >= 0) {
+    updatedVariants = currentVariants.map((v, i) => (i === existingIdx ? newVariant : v));
+  } else {
+    updatedVariants = [...currentVariants, newVariant];
+  }
+
+  // Write updated variants to masterProducts
+  await updateDoc(masterDocRef, {
+    variants: updatedVariants,
+    updatedAt: Date.now(),
+  });
+
+  // 2. Mark request doc as approved
+  const reqRef = doc(db, PRODUCT_REQUESTS_COLLECTION, requestId);
+  await updateDoc(reqRef, {
+    status: 'approved',
+    size: cleanSize,
+    mrp: Math.max(1, mrp),
+  });
+
+  // 3. Update any listings referencing this request ID or name
+  try {
+    const listingsColRef = collection(db, LISTINGS_COLLECTION);
+    const q = query(listingsColRef, where('productId', '==', requestId));
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => {
+        batch.update(d.ref, {
+          isUnverified: false,
+          productId: existingProductId,
+          productName: prodName,
+          variantSize: cleanSize,
+          mrp: Math.max(1, mrp),
+        });
+      });
+      await batch.commit();
+    }
+  } catch (err) {
+    console.error('[Firebase approveProductRequestAsVariantDoc] Listing sync error:', err);
+  }
 };
 
 /**

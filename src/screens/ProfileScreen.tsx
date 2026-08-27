@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { HostelName, HOSTEL_BLOCKS } from '../types/user';
-import { Product } from '../types/catalog';
+import { Product, ProductVariant } from '../types/catalog';
 import { MOCK_PRODUCTS, getProductById, splitRoomString } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { CascadingProductPicker } from '../components/CascadingProductPicker';
@@ -80,11 +80,15 @@ export const ProfileScreen: React.FC = () => {
   const [isCascadingPickerOpen, setIsCascadingPickerOpen] = useState(false);
 
   // Add / Edit Listing Form State
-  const [selectedProduct, setSelectedProduct] = useState<Product>(allProducts[0] || MOCK_PRODUCTS[0]);
+  // Add / Edit Listing Form State
+  const defaultProd = allProducts[0] || MOCK_PRODUCTS[0];
+  const defaultVar = (defaultProd.variants && defaultProd.variants[0]) || { size: 'Standard', mrp: defaultProd.mrp || 20 };
+  const [selectedProduct, setSelectedProduct] = useState<Product>(defaultProd);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant>(defaultVar);
   const [isUnverifiedSelection, setIsUnverifiedSelection] = useState(false);
   const [unverifiedName, setUnverifiedName] = useState('');
   const [listingQuantity, setListingQuantity] = useState(5);
-  const [listingPrice, setListingPrice] = useState(allProducts[0]?.mrp || 20);
+  const [listingPrice, setListingPrice] = useState(defaultVar.mrp);
   const [listingDeliveryOptIn, setListingDeliveryOptIn] = useState(true);
   const [listingDeliveryFee, setListingDeliveryFee] = useState(5);
   const [formError, setFormError] = useState('');
@@ -159,12 +163,14 @@ export const ProfileScreen: React.FC = () => {
 
   // Open modal for adding a new listing
   const handleOpenAddModal = () => {
-    const defaultProduct = allProducts[0] || MOCK_PRODUCTS[0];
-    setSelectedProduct(defaultProduct);
+    const defaultP = allProducts[0] || MOCK_PRODUCTS[0];
+    const defaultV = (defaultP.variants && defaultP.variants[0]) || { size: 'Standard', mrp: defaultP.mrp || 20 };
+    setSelectedProduct(defaultP);
+    setSelectedVariant(defaultV);
     setIsUnverifiedSelection(false);
     setUnverifiedName('');
     setListingQuantity(5);
-    setListingPrice(defaultProduct.mrp);
+    setListingPrice(defaultV.mrp);
     setListingDeliveryOptIn(user.deliveryOptIn);
     setListingDeliveryFee(5);
     setFormError('');
@@ -175,7 +181,13 @@ export const ProfileScreen: React.FC = () => {
   // Open modal for editing an existing listing
   const handleOpenEditModal = (listing: FirestoreListing) => {
     const foundProd = getProductById(listing.productId, allProducts);
+    const variants = foundProd.variants && foundProd.variants.length > 0
+      ? foundProd.variants
+      : [{ size: 'Standard', mrp: foundProd.mrp || 20 }];
+    const foundVar = variants.find((v) => v.size === listing.variantSize) || variants[0];
+
     setSelectedProduct(foundProd);
+    setSelectedVariant(foundVar);
     setIsUnverifiedSelection(!!listing.isUnverified);
     setUnverifiedName(listing.unverifiedProductName || listing.productName);
     setListingQuantity(listing.quantity);
@@ -190,13 +202,16 @@ export const ProfileScreen: React.FC = () => {
   // Selection callback from CascadingProductPicker
   const handleSelectProductFromPicker = (
     product: Product,
+    variant?: ProductVariant,
     isUnverified?: boolean,
     requestedName?: string
   ) => {
     setSelectedProduct(product);
+    const chosenVariant = variant || (product.variants && product.variants[0]) || { size: 'Standard', mrp: product.mrp || 20 };
+    setSelectedVariant(chosenVariant);
     setIsUnverifiedSelection(!!isUnverified);
     setUnverifiedName(requestedName || product.name);
-    setListingPrice(product.mrp);
+    setListingPrice(chosenVariant.mrp);
   };
 
   // Submit Add/Edit Listing
@@ -210,9 +225,9 @@ export const ProfileScreen: React.FC = () => {
       return;
     }
 
-    // Validation 2: Price cannot exceed product MRP
-    if (listingPrice > selectedProduct.mrp) {
-      setFormError(`Price cannot exceed product MRP of ₹${selectedProduct.mrp}`);
+    // Validation 2: Price cannot exceed selected variant MRP
+    if (listingPrice > selectedVariant.mrp) {
+      setFormError(`Price cannot exceed variant MRP of ₹${selectedVariant.mrp} (${selectedVariant.size})`);
       return;
     }
 
@@ -244,6 +259,8 @@ export const ProfileScreen: React.FC = () => {
           hostel: (user.hostel as HostelName) || 'Shivalik',
           productId: selectedProduct.id || '',
           productName: prodName || 'Item',
+          variantSize: selectedVariant.size,
+          mrp: selectedVariant.mrp,
           quantity: listingQuantity,
           price: listingPrice,
           isSellerAwake: user.isAwake ?? true,
@@ -640,7 +657,7 @@ export const ProfileScreen: React.FC = () => {
                         )}
                       </div>
                       <span className="text-[11px] text-on-surface-variant block truncate">
-                        {selectedProduct.category} • {selectedProduct.subcategory} (MRP ₹{selectedProduct.mrp})
+                        {selectedProduct.category} • {selectedProduct.subcategory} ({selectedVariant.size} • MRP ₹{selectedVariant.mrp})
                       </span>
                     </div>
                   </div>
@@ -676,13 +693,13 @@ export const ProfileScreen: React.FC = () => {
                     Your Price (₹)
                   </label>
                   <span className="text-[10px] text-primary-container font-bold">
-                    Max MRP: ₹{selectedProduct.mrp}
+                    Max MRP: ₹{selectedVariant.mrp} ({selectedVariant.size})
                   </span>
                 </div>
                 <input
                   type="number"
                   min="1"
-                  max={selectedProduct.mrp}
+                  max={selectedVariant.mrp}
                   required
                   value={listingPrice}
                   onChange={(e) => setListingPrice(parseInt(e.target.value, 10) || 1)}

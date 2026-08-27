@@ -22,6 +22,8 @@ export interface FirestoreListing {
   hostel: HostelName;
   productId: string;
   productName: string;
+  variantSize?: string;
+  mrp?: number;
   quantity: number;
   price: number;
   isSellerAwake: boolean;

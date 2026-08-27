@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Product, ProductCategory } from '../types/catalog';
+import { Product, ProductCategory, ProductVariant } from '../types/catalog';
 import { PRODUCT_CATEGORIES } from '../data/mockCatalog';
 import { createProductRequestDoc } from '../firebase/productRequests';
 
 interface CascadingProductPickerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectProduct: (product: Product, isUnverified?: boolean, requestedName?: string) => void;
+  onSelectProduct: (
+    product: Product,
+    selectedVariant?: ProductVariant,
+    isUnverified?: boolean,
+    requestedName?: string
+  ) => void;
   allProducts: Product[];
   currentUserId?: string;
 }
@@ -31,13 +36,17 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
   allProducts,
   currentUserId,
 }) => {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedProductObj, setSelectedProductObj] = useState<Product | null>(null);
 
   // Request New Product modal state
   const [isRequestingNew, setIsRequestingNew] = useState(false);
   const [newProductName, setNewProductName] = useState('');
+  const [newProductSize, setNewProductSize] = useState('Standard');
+  const [newProductSellingPrice, setNewProductSellingPrice] = useState<number>(20);
+  const [newProductMrp, setNewProductMrp] = useState<number>(20);
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [requestError, setRequestError] = useState('');
 
@@ -74,7 +83,21 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
   };
 
   const handleSelectProduct = (product: Product) => {
-    onSelectProduct(product);
+    const variants = Array.isArray(product.variants) && product.variants.length > 0
+      ? product.variants
+      : [{ size: 'Standard', mrp: product.mrp || 20 }];
+
+    if (variants.length === 1) {
+      onSelectProduct(product, variants[0]);
+      onClose();
+    } else {
+      setSelectedProductObj(product);
+      setStep(4);
+    }
+  };
+
+  const handleSelectVariant = (product: Product, variant: ProductVariant) => {
+    onSelectProduct(product, variant);
     onClose();
   };
 
@@ -82,14 +105,21 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
     setStep(1);
     setSelectedCategory(null);
     setSelectedSubcategory(null);
+    setSelectedProductObj(null);
     setIsRequestingNew(false);
     setNewProductName('');
+    setNewProductSize('Standard');
+    setNewProductSellingPrice(20);
+    setNewProductMrp(20);
     setRequestError('');
   };
 
   const handleOpenRequestNew = () => {
     setIsRequestingNew(true);
     setNewProductName('');
+    setNewProductSize('Standard');
+    setNewProductSellingPrice(20);
+    setNewProductMrp(20);
     setRequestError('');
   };
 
@@ -104,7 +134,16 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
     setRequestError('');
     try {
       const nameClean = newProductName.trim();
-      const requestId = await createProductRequestDoc(nameClean, currentUserId || 'anonymous');
+      const sizeClean = newProductSize.trim() || 'Standard';
+      const requestId = await createProductRequestDoc(
+        nameClean,
+        currentUserId || 'anonymous',
+        sizeClean,
+        newProductSellingPrice,
+        newProductMrp
+      );
+
+      const variant: ProductVariant = { size: sizeClean, mrp: newProductMrp };
 
       // Build synthetic unverified product
       const syntheticProduct: Product = {
@@ -112,7 +151,8 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
         name: nameClean,
         category: selectedCategory || ('Chips & Wafers' as ProductCategory),
         subcategory: selectedSubcategory || 'Custom Request',
-        mrp: 50,
+        variants: [variant],
+        mrp: newProductMrp,
         imageUrl:
           'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
         iconName: 'help_outline',
@@ -120,7 +160,7 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
         isUnverified: true,
       };
 
-      onSelectProduct(syntheticProduct, true, nameClean);
+      onSelectProduct(syntheticProduct, variant, true, nameClean);
       handleReset();
       onClose();
     } catch (err: any) {
@@ -141,7 +181,8 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (step === 3) setStep(2);
+                  if (step === 4) setStep(3);
+                  else if (step === 3) setStep(2);
                   else if (step === 2) setStep(1);
                 }}
                 className="w-8 h-8 rounded-full bg-[#1e2020] flex items-center justify-center text-primary-container hover:bg-primary-container/20 cursor-pointer"
@@ -153,10 +194,12 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
               {isRequestingNew
                 ? 'Request a New Product'
                 : step === 1
-                ? 'Select Category (1/3)'
+                ? 'Select Category (1/4)'
                 : step === 2
-                ? `${selectedCategory} (2/3)`
-                : `${selectedSubcategory} (3/3)`}
+                ? `${selectedCategory} (2/4)`
+                : step === 3
+                ? `${selectedSubcategory} (3/4)`
+                : `Select Pack Size (4/4)`}
             </h2>
           </div>
 
@@ -264,43 +307,102 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
                     No products in this subcategory yet. Use "Request a New Product" below!
                   </p>
                 ) : (
-                  finalProducts.map((prod) => (
-                    <button
-                      key={prod.id}
-                      type="button"
-                      onClick={() => handleSelectProduct(prod)}
-                      className="bg-[#181a1a] hover:bg-[#222424] border border-[#2a2c2c] hover:border-primary-container/60 rounded-2xl p-3 flex items-center justify-between text-left transition-all active:scale-[0.98] cursor-pointer group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={prod.imageUrl}
-                          alt={prod.name}
-                          className="w-10 h-10 object-contain rounded-xl bg-black/40 p-1 border border-[#333535]"
-                        />
-                        <div>
-                          <h3 className="text-xs font-bold text-white group-hover:text-primary-container transition-colors">
-                            {prod.name}
-                          </h3>
-                          <span className="text-[11px] font-mono text-primary-container">
-                            MRP ₹{prod.mrp}
-                          </span>
-                        </div>
-                      </div>
+                  finalProducts.map((prod) => {
+                    const variants = Array.isArray(prod.variants) && prod.variants.length > 0
+                      ? prod.variants
+                      : [{ size: 'Standard', mrp: prod.mrp || 20 }];
 
-                      <span className="text-xs font-bold text-black bg-primary-container px-3 py-1 rounded-full uppercase tracking-wider group-hover:brightness-110">
-                        Select
-                      </span>
-                    </button>
-                  ))
+                    return (
+                      <button
+                        key={prod.id}
+                        type="button"
+                        onClick={() => handleSelectProduct(prod)}
+                        className="bg-[#181a1a] hover:bg-[#222424] border border-[#2a2c2c] hover:border-primary-container/60 rounded-2xl p-3 flex items-center justify-between text-left transition-all active:scale-[0.98] cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={prod.imageUrl}
+                            alt={prod.name}
+                            className="w-10 h-10 object-contain rounded-xl bg-black/40 p-1 border border-[#333535]"
+                          />
+                          <div>
+                            <h3 className="text-xs font-bold text-white group-hover:text-primary-container transition-colors">
+                              {prod.name}
+                            </h3>
+                            <span className="text-[11px] font-mono text-primary-container">
+                              {variants.length > 1
+                                ? `${variants.length} Pack Sizes Available`
+                                : `${variants[0].size} • MRP ₹${variants[0].mrp}`}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-bold text-black bg-primary-container px-3 py-1 rounded-full uppercase tracking-wider group-hover:brightness-110">
+                          {variants.length > 1 ? 'Choose Size' : 'Select'}
+                        </span>
+                      </button>
+                    );
+                  })
                 )}
+              </div>
+            )}
+
+            {/* STEP 4: PACK SIZE VARIANT PICKER */}
+            {step === 4 && selectedProductObj && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3 p-3 bg-[#181a1a] border border-[#2a2c2c] rounded-2xl mb-2">
+                  <img
+                    src={selectedProductObj.imageUrl}
+                    alt={selectedProductObj.name}
+                    className="w-12 h-12 object-contain rounded-xl bg-black/40 p-1 border border-[#333535]"
+                  />
+                  <div>
+                    <h3 className="text-sm font-extrabold text-white">
+                      {selectedProductObj.name}
+                    </h3>
+                    <p className="text-xs text-on-surface-variant">
+                      Select which pack size you are listing:
+                    </p>
+                  </div>
+                </div>
+
+                {((Array.isArray(selectedProductObj.variants) && selectedProductObj.variants.length > 0)
+                  ? selectedProductObj.variants
+                  : [{ size: 'Standard', mrp: selectedProductObj.mrp || 20 }]
+                ).map((variant, index) => (
+                  <button
+                    key={`${variant.size}-${index}`}
+                    type="button"
+                    onClick={() => handleSelectVariant(selectedProductObj, variant)}
+                    className="bg-[#1e2020] hover:bg-[#282a2b] border border-primary-container/40 hover:border-primary-container rounded-2xl p-4 flex justify-between items-center transition-all cursor-pointer group"
+                  >
+                    <div className="flex flex-col text-left">
+                      <span className="text-sm font-extrabold text-white group-hover:text-primary-container">
+                        {variant.size} Pack
+                      </span>
+                      <span className="text-xs text-on-surface-variant font-mono">
+                        Maximum Retail Price (MRP)
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-base font-extrabold text-primary-container font-mono">
+                        MRP ₹{variant.mrp}
+                      </span>
+                      <span className="text-[10px] font-bold text-black bg-primary-container px-2.5 py-0.5 rounded-full uppercase block mt-1">
+                        Select Size
+                      </span>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
         ) : (
           /* REQUEST A NEW PRODUCT FORM */
-          <form onSubmit={handleSubmitNewProductRequest} className="flex flex-col gap-4 py-2">
+          <form onSubmit={handleSubmitNewProductRequest} className="flex flex-col gap-4 py-2 overflow-y-auto max-h-[60vh]">
             <p className="text-xs text-on-surface-variant leading-relaxed">
-              Don't see what you want to sell/suggest? Submit the product name below. You can start
+              Don't see what you want to sell/suggest? Submit the product details below. You can start
               listing it right away with an <strong className="text-amber-400">Unverified</strong> tag until admin approval!
             </p>
 
@@ -313,9 +415,50 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
                 placeholder="e.g. Lay's Gourmet Cheese & Herbs"
                 value={newProductName}
                 onChange={(e) => setNewProductName(e.target.value)}
-                className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container text-sm"
+                className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
                 autoFocus
               />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                Pack Size / Weight
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 50g, 1L, Pack of 6"
+                value={newProductSize}
+                onChange={(e) => setNewProductSize(e.target.value)}
+                className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  Selling Price (₹)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newProductSellingPrice}
+                  onChange={(e) => setNewProductSellingPrice(Number(e.target.value))}
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  MRP (₹)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={newProductMrp}
+                  onChange={(e) => setNewProductMrp(Number(e.target.value))}
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3 focus:outline-none focus:border-primary-container text-sm"
+                />
+              </div>
             </div>
 
             {requestError && (
