@@ -11,6 +11,7 @@ import { RequestConfirmationScreen } from './screens/RequestConfirmationScreen';
 import { RequestsScreen } from './screens/RequestsScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { AdminScreen } from './screens/AdminScreen';
 
 // Protected Route Guard for Setup
 const RequireVerification: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -105,6 +106,14 @@ const AppRoutes: React.FC = () => {
         element={
           <RequireSetupComplete>
             <ProfileScreen />
+          </RequireSetupComplete>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <RequireSetupComplete>
+            <AdminScreen />
           </RequireSetupComplete>
         }
       />

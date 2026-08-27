@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { Product, ProductAggregate } from '../types/catalog';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
-import { ProductAggregate } from '../types/catalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { FirestoreListing, subscribeToHostelListings } from '../firebase/listings';
+import { subscribeToMasterProducts } from '../firebase/masterCatalog';
 
 export const CatalogScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +13,18 @@ export const CatalogScreen: React.FC = () => {
 
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
+  const [masterProducts, setMasterProducts] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Subscribe in real-time to master catalog products in Firestore
+  useEffect(() => {
+    const unsub = subscribeToMasterProducts((items) => {
+      setMasterProducts(items);
+    });
+    return () => unsub();
+  }, []);
+
+  const allProducts = masterProducts.length > 0 ? masterProducts : MOCK_PRODUCTS;
 
   if (loading) {
     return (
@@ -39,7 +52,7 @@ export const CatalogScreen: React.FC = () => {
   }, [userHostel]);
 
   // Aggregate Firestore listings by product
-  const aggregates: ProductAggregate[] = MOCK_PRODUCTS.map((product) => {
+  const rawAggregates: ProductAggregate[] = allProducts.map((product) => {
     const matchingListings = hostelListings.filter(
       (l) => l.productId === product.id && l.isSellerAwake && l.quantity > 0
     );
@@ -75,10 +88,35 @@ export const CatalogScreen: React.FC = () => {
         isSellerAwake: l.isSellerAwake,
         deliveryOptIn: l.deliveryOptIn,
         deliveryFee: l.deliveryFee,
+        isUnverified: l.isUnverified,
+        unverifiedProductName: l.unverifiedProductName,
       })),
       lowestPrice,
       badge,
     };
+  });
+
+  // Dynamic Two-Tier Sort:
+  // Tier 1: In-Stock items (totalUnits > 0), sorted alphabetically by product name
+  // Tier 2: Out-of-Stock items (totalUnits === 0), sorted alphabetically by product name
+  const sortedAggregates = [...rawAggregates].sort((a, b) => {
+    const aInStock = a.totalUnits > 0;
+    const bInStock = b.totalUnits > 0;
+
+    if (aInStock && !bInStock) return -1;
+    if (!aInStock && bInStock) return 1;
+
+    return a.product.name.localeCompare(b.product.name, undefined, { sensitivity: 'base' });
+  });
+
+  // Real-Time Search Filter: Filters sortedAggregates based on searchQuery
+  const filteredAggregates = sortedAggregates.filter((agg) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.trim().toLowerCase();
+    const nameMatch = agg.product.name.toLowerCase().includes(query);
+    const categoryMatch = agg.product.category.toLowerCase().includes(query);
+    const subcategoryMatch = (agg.product.subcategory || '').toLowerCase().includes(query);
+    return nameMatch || categoryMatch || subcategoryMatch;
   });
 
   // Ticker text from active Firestore listings
@@ -146,104 +184,160 @@ export const CatalogScreen: React.FC = () => {
       </header>
 
       {/* Main Content Canvas */}
-      <main className="flex-1 pt-[210px] px-container-padding flex flex-col gap-6 max-w-md mx-auto w-full">
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {aggregates.map((agg) => {
-            const isAvailable = agg.totalUnits > 0;
-            return (
-              <div
-                key={agg.product.id}
-                onClick={() => handleCardClick(agg.product.id)}
-                className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 cursor-pointer ${
-                  isAvailable
-                    ? 'border-[#ff5f1f]/50 hover:border-[#ff5f1f] neon-glow active:scale-95'
-                    : 'border-[#1F1F1F] opacity-75 hover:border-primary-container/30'
-                }`}
+      <main className="flex-1 pt-[205px] px-container-padding flex flex-col gap-4 max-w-md mx-auto w-full">
+        {/* Real-Time Search Bar */}
+        <div className="relative w-full">
+          <div className="relative flex items-center w-full bg-[#1e2020] border-2 border-[#333535] focus-within:border-primary-container rounded-2xl transition-colors shadow-inner">
+            <span className="material-symbols-outlined text-primary-container text-xl pl-3.5 pointer-events-none">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search snacks by name or brand..."
+              className="w-full bg-transparent text-white font-sans text-sm py-3 pl-3 pr-10 focus:outline-none placeholder:text-on-surface-variant/60 font-semibold"
+            />
+            {searchQuery.trim() !== '' && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 w-6 h-6 rounded-full bg-[#2a2c2c] hover:bg-[#383a3a] text-on-surface-variant hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+                title="Clear search"
               >
-                {/* Badge Tag */}
-                {agg.badge && (
-                  <div className="absolute top-2 right-2 z-20">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                        agg.badge === 'Out of Stock'
-                          ? 'bg-error-container/20 text-error border-error'
-                          : agg.badge === 'Last One'
-                          ? 'bg-error-container/20 text-error border-error animate-pulse'
-                          : 'bg-primary-container/20 text-primary-container border-primary-container'
-                      }`}
-                    >
-                      {agg.badge}
-                    </span>
-                  </div>
-                )}
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            )}
+          </div>
+        </div>
 
-                {/* Product Image Illustration */}
+        {/* Empty State vs Product Grid */}
+        {filteredAggregates.length === 0 ? (
+          <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-3xl p-8 text-center flex flex-col items-center gap-3 my-4">
+            <div className="w-12 h-12 rounded-full bg-[#242626] flex items-center justify-center text-primary-container">
+              <span className="material-symbols-outlined text-2xl">search_off</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-white">
+                No snacks match "{searchQuery}"
+              </h3>
+              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                Try checking for typos or searching by brand or category (e.g., "Kurkure", "Chips", "Noodles").
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="mt-1 bg-primary-container text-black font-extrabold text-xs px-4 py-2 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 cursor-pointer transition-all active:scale-95"
+            >
+              Clear Search
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {filteredAggregates.map((agg) => {
+              const isAvailable = agg.totalUnits > 0;
+              return (
                 <div
-                  className={`h-24 w-full flex items-center justify-center relative z-10 ${
-                    !isAvailable ? 'grayscale' : ''
+                  key={agg.product.id}
+                  onClick={() => handleCardClick(agg.product.id)}
+                  className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 cursor-pointer ${
+                    isAvailable
+                      ? 'border-[#ff5f1f]/50 hover:border-[#ff5f1f] neon-glow active:scale-95'
+                      : 'border-[#1F1F1F] opacity-75 hover:border-primary-container/30'
                   }`}
                 >
-                  <div className="absolute inset-0 bg-primary-container/5 rounded-xl blur-lg pointer-events-none"></div>
-                  <img
-                    src={agg.product.imageUrl}
-                    alt={agg.product.name}
-                    className="h-20 w-auto object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]"
-                    loading="lazy"
-                  />
-                </div>
-
-                {/* Details Section */}
-                <div className="flex flex-col gap-1 z-10">
-                  <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
-                    {agg.product.category}
-                  </span>
-                  <h3 className="text-base font-extrabold text-on-surface tracking-tight leading-tight">
-                    {agg.product.name}
-                  </h3>
-
-                  {/* Pricing & Stock Stats Row */}
-                  <div className="flex justify-between items-baseline mt-1">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-sm font-extrabold text-primary-container font-mono">
-                        ₹{agg.lowestPrice}
+                  {/* Badge Tag */}
+                  {agg.badge && (
+                    <div className="absolute top-2 right-2 z-20">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                          agg.badge === 'Out of Stock'
+                            ? 'bg-error-container/20 text-error border-error'
+                            : agg.badge === 'Last One'
+                            ? 'bg-error-container/20 text-error border-error animate-pulse'
+                            : 'bg-primary-container/20 text-primary-container border-primary-container'
+                        }`}
+                      >
+                        {agg.badge}
                       </span>
-                      {agg.lowestPrice < agg.product.mrp && (
-                        <span className="text-[10px] text-on-surface-variant line-through font-mono">
-                          ₹{agg.product.mrp}
+                    </div>
+                  )}
+
+                  {/* Product Image Illustration */}
+                  <div
+                    className={`h-24 w-full flex items-center justify-center relative z-10 ${
+                      !isAvailable ? 'grayscale' : ''
+                    }`}
+                  >
+                    <div className="absolute inset-0 bg-primary-container/5 rounded-xl blur-lg pointer-events-none"></div>
+                    <img
+                      src={agg.product.imageUrl}
+                      alt={agg.product.name}
+                      className="h-20 w-auto object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.8)]"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* Details Section */}
+                  <div className="flex flex-col gap-1 z-10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider truncate">
+                        {agg.product.subcategory || agg.product.category}
+                      </span>
+                      {agg.product.isCustomApproved && (
+                        <span className="text-[9px] font-bold text-green-400 bg-green-500/15 border border-green-500/30 px-1 py-0.2 rounded shrink-0">
+                          New
                         </span>
                       )}
                     </div>
+                    <h3 className="text-base font-extrabold text-on-surface tracking-tight leading-tight">
+                      {agg.product.name}
+                    </h3>
 
-                    <span className="text-[10px] text-on-surface-variant font-medium">
-                      MRP ₹{agg.product.mrp}
-                    </span>
-                  </div>
+                    {/* Pricing & Stock Stats Row */}
+                    <div className="flex justify-between items-baseline mt-1">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-extrabold text-primary-container font-mono">
+                          ₹{agg.lowestPrice}
+                        </span>
+                        {agg.lowestPrice < agg.product.mrp && (
+                          <span className="text-[10px] text-on-surface-variant line-through font-mono">
+                            ₹{agg.product.mrp}
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Stock Availability Footer */}
-                  <div className="mt-2 pt-2 border-t border-[#1F1F1F] flex justify-between items-center text-[11px]">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          isAvailable ? 'bg-green-400 animate-pulse' : 'bg-slate-600'
-                        }`}
-                      ></span>
-                      <span className="font-bold text-on-surface">
-                        {isAvailable ? `${agg.totalUnits} available` : 'None nearby'}
+                      <span className="text-[10px] text-on-surface-variant font-medium">
+                        MRP ₹{agg.product.mrp}
                       </span>
                     </div>
 
-                    {isAvailable && (
-                      <span className="text-on-surface-variant font-medium">
-                        {agg.awakeRoomCount} {agg.awakeRoomCount === 1 ? 'room' : 'rooms'}
-                      </span>
-                    )}
+                    {/* Stock Availability Footer */}
+                    <div className="mt-2 pt-2 border-t border-[#1F1F1F] flex justify-between items-center text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            isAvailable ? 'bg-green-400 animate-pulse' : 'bg-slate-600'
+                          }`}
+                        ></span>
+                        <span className="font-bold text-on-surface">
+                          {isAvailable ? `${agg.totalUnits} available` : 'None nearby'}
+                        </span>
+                      </div>
+
+                      {isAvailable && (
+                        <span className="text-on-surface-variant font-medium">
+                          {agg.awakeRoomCount} {agg.awakeRoomCount === 1 ? 'room' : 'rooms'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {/* Bottom Navigation */}

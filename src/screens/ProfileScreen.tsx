@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { HostelName, HOSTEL_BLOCKS } from '../types/user';
-import { MOCK_PRODUCTS, PRODUCT_CATEGORIES, splitRoomString } from '../data/mockCatalog';
+import { Product } from '../types/catalog';
+import { MOCK_PRODUCTS, getProductById, splitRoomString } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { CascadingProductPicker } from '../components/CascadingProductPicker';
 import { useNotification } from '../context/NotificationContext';
+import { ADMIN_EMAIL, isAdminEmail } from '../config/admin';
+import { subscribeToMasterProducts } from '../firebase/masterCatalog';
+import { recalculateAndSaveSellerReliabilityScore } from '../firebase/requests';
 import {
   FirestoreListing,
   createListingDoc,
@@ -43,6 +48,17 @@ export const ProfileScreen: React.FC = () => {
   const [numericRoom, setNumericRoom] = useState<string>(initialSplit.number || '');
   const [newRoom, setNewRoom] = useState(user.roomNumber || '');
 
+  // Real-time Master Catalog Products from Firestore
+  const [masterProducts, setMasterProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToMasterProducts((items) => {
+      setMasterProducts(items);
+    });
+    return () => unsub();
+  }, []);
+
+  const allProducts = masterProducts.length > 0 ? masterProducts : MOCK_PRODUCTS;
+
   if (loading) {
     return (
       <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
@@ -60,10 +76,15 @@ export const ProfileScreen: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<FirestoreListing | null>(null);
 
+  // Cascading Product Picker Modal state
+  const [isCascadingPickerOpen, setIsCascadingPickerOpen] = useState(false);
+
   // Add / Edit Listing Form State
-  const [selectedProductId, setSelectedProductId] = useState(MOCK_PRODUCTS[0].id);
+  const [selectedProduct, setSelectedProduct] = useState<Product>(allProducts[0] || MOCK_PRODUCTS[0]);
+  const [isUnverifiedSelection, setIsUnverifiedSelection] = useState(false);
+  const [unverifiedName, setUnverifiedName] = useState('');
   const [listingQuantity, setListingQuantity] = useState(5);
-  const [listingPrice, setListingPrice] = useState(MOCK_PRODUCTS[0].mrp);
+  const [listingPrice, setListingPrice] = useState(allProducts[0]?.mrp || 20);
   const [listingDeliveryOptIn, setListingDeliveryOptIn] = useState(true);
   const [listingDeliveryFee, setListingDeliveryFee] = useState(5);
   const [formError, setFormError] = useState('');
@@ -75,6 +96,8 @@ export const ProfileScreen: React.FC = () => {
     const unsubscribe = subscribeToUserListings(user.uid, (items) => {
       setMyListings(items);
     });
+    // Recalculate seller reliability score on profile view
+    recalculateAndSaveSellerReliabilityScore(user.uid);
     return () => unsubscribe();
   }, [user.uid]);
 
@@ -136,8 +159,10 @@ export const ProfileScreen: React.FC = () => {
 
   // Open modal for adding a new listing
   const handleOpenAddModal = () => {
-    const defaultProduct = MOCK_PRODUCTS[0];
-    setSelectedProductId(defaultProduct.id);
+    const defaultProduct = allProducts[0] || MOCK_PRODUCTS[0];
+    setSelectedProduct(defaultProduct);
+    setIsUnverifiedSelection(false);
+    setUnverifiedName('');
     setListingQuantity(5);
     setListingPrice(defaultProduct.mrp);
     setListingDeliveryOptIn(user.deliveryOptIn);
@@ -149,7 +174,10 @@ export const ProfileScreen: React.FC = () => {
 
   // Open modal for editing an existing listing
   const handleOpenEditModal = (listing: FirestoreListing) => {
-    setSelectedProductId(listing.productId);
+    const foundProd = getProductById(listing.productId, allProducts);
+    setSelectedProduct(foundProd);
+    setIsUnverifiedSelection(!!listing.isUnverified);
+    setUnverifiedName(listing.unverifiedProductName || listing.productName);
     setListingQuantity(listing.quantity);
     setListingPrice(listing.price);
     setListingDeliveryOptIn(listing.deliveryOptIn);
@@ -159,12 +187,22 @@ export const ProfileScreen: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
+  // Selection callback from CascadingProductPicker
+  const handleSelectProductFromPicker = (
+    product: Product,
+    isUnverified?: boolean,
+    requestedName?: string
+  ) => {
+    setSelectedProduct(product);
+    setIsUnverifiedSelection(!!isUnverified);
+    setUnverifiedName(requestedName || product.name);
+    setListingPrice(product.mrp);
+  };
+
   // Submit Add/Edit Listing
   const handleSaveListing = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
-
-    const targetProduct = MOCK_PRODUCTS.find((p) => p.id === selectedProductId) || MOCK_PRODUCTS[0];
 
     // Validation 1: Quantity must be >= 1
     if (listingQuantity < 1) {
@@ -173,8 +211,8 @@ export const ProfileScreen: React.FC = () => {
     }
 
     // Validation 2: Price cannot exceed product MRP
-    if (listingPrice > targetProduct.mrp) {
-      setFormError(`Price cannot exceed product MRP of ₹${targetProduct.mrp}`);
+    if (listingPrice > selectedProduct.mrp) {
+      setFormError(`Price cannot exceed product MRP of ₹${selectedProduct.mrp}`);
       return;
     }
 
@@ -195,18 +233,24 @@ export const ProfileScreen: React.FC = () => {
         });
       } else {
         // Create new listing
+        const prodName = isUnverifiedSelection
+          ? unverifiedName || selectedProduct.name
+          : selectedProduct.name;
+
         await createListingDoc({
           sellerUid: user.uid || '',
           sellerName: user.name || 'PEC Student',
           sellerRoom: user.roomNumber,
           hostel: user.hostel as HostelName,
-          productId: targetProduct.id,
-          productName: targetProduct.name,
+          productId: selectedProduct.id,
+          productName: prodName,
           quantity: listingQuantity,
           price: listingPrice,
           isSellerAwake: user.isAwake,
           deliveryOptIn: listingDeliveryOptIn,
           deliveryFee: listingDeliveryOptIn ? listingDeliveryFee : 0,
+          isUnverified: isUnverifiedSelection,
+          unverifiedProductName: isUnverifiedSelection ? prodName : undefined,
         });
       }
       setIsAddModalOpen(false);
@@ -244,58 +288,72 @@ export const ProfileScreen: React.FC = () => {
 
       {/* Main Canvas */}
       <main className="w-full px-4 pt-4 flex flex-col gap-5 max-w-md mx-auto flex-1">
+        {/* ADMIN PORTAL BANNER (Visible only to authorized admin) */}
+        {isAdminEmail(user.email) && (
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className="w-full bg-primary-container text-black font-extrabold text-xs uppercase tracking-widest py-3.5 px-4 rounded-2xl neon-glow flex items-center justify-between cursor-pointer active:scale-95 transition-all shadow-lg"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+              <span>Admin Catalog Moderation</span>
+            </div>
+            <span className="material-symbols-outlined text-base">arrow_forward</span>
+          </button>
+        )}
+
         {/* IDENTITY CARD */}
         <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-5 flex flex-col gap-4 relative overflow-hidden shadow-xl">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-2xl bg-primary-container text-black font-black text-2xl flex items-center justify-center neon-glow">
-                {user.name ? user.name.charAt(0).toUpperCase() : 'R'}
+              <div className="w-12 h-12 rounded-2xl bg-primary-container/15 border border-primary-container/40 flex items-center justify-center text-primary-container font-extrabold text-lg shadow-inner">
+                {user.name.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h2 className="text-xl font-extrabold text-white">
-                  {user.name || 'PEC Student'}
+                <h2 className="text-lg font-extrabold text-white leading-snug">
+                  {user.name}
                 </h2>
-                <p className="text-xs text-on-surface-variant font-mono mt-0.5">
-                  {maskEmail(user.email || '')}
-                </p>
+                <span className="text-xs font-mono text-on-surface-variant block">
+                  {maskEmail(user.email)}
+                </span>
               </div>
             </div>
-          </div>
 
-          {/* Supplier Badge */}
-          {user.reliabilityScore >= 80 && (
-            <div className="flex items-center gap-2 text-xs font-extrabold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-3.5 py-1.5 rounded-full self-start">
-              <span>⭐ Reliable Supplier</span>
-              <span className="text-[10px] text-amber-200/70">({user.reliabilityScore}% score)</span>
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">
+                Reliability
+              </span>
+              <span className="text-base font-extrabold text-green-400 font-mono">
+                {user.reliabilityScore}%
+              </span>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* MY LISTINGS TONIGHT SECTION (FIRESTORE REAL-TIME) */}
-        <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
+        {/* MY LISTINGS SECTION */}
+        <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-5 flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
-                My Listings Tonight 🛍️
+              <h3 className="text-base font-extrabold text-white">
+                Tonight's Active Items
               </h3>
               <p className="text-xs text-on-surface-variant">
-                Items you're selling from Room {user.roomNumber}
+                Items you are currently selling in {user.hostel}
               </p>
             </div>
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="bg-primary-container text-black font-extrabold text-xs px-3.5 py-2 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 active:scale-95 transition-transform flex items-center gap-1 cursor-pointer"
+              className="bg-primary-container text-black font-extrabold text-xs px-3.5 py-2 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
             >
-              <span className="material-symbols-outlined text-sm font-bold">add</span>
-              <span>Add Item</span>
+              <span>+ Add Item</span>
             </button>
           </div>
 
-          {/* Listings List */}
           {myListings.length === 0 ? (
-            <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-2xl p-4 text-center">
-              <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-1">
+            <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-2xl p-5 text-center flex flex-col items-center gap-1">
+              <span className="material-symbols-outlined text-3xl text-on-surface-variant mb-1">
                 inventory_2
               </span>
               <p className="text-xs font-semibold text-on-surface-variant">
@@ -312,7 +370,7 @@ export const ProfileScreen: React.FC = () => {
           ) : (
             <div className="flex flex-col gap-2.5">
               {myListings.map((item) => {
-                const prod = MOCK_PRODUCTS.find((p) => p.id === item.productId);
+                const prod = getProductById(item.productId, allProducts);
                 return (
                   <div
                     key={item.id}
@@ -321,13 +379,20 @@ export const ProfileScreen: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-container/10 border border-primary-container/20 flex items-center justify-center text-primary-container">
                         <span className="material-symbols-outlined text-xl">
-                          {prod ? prod.iconName : 'local_mall'}
+                          {item.isUnverified ? 'help_outline' : prod ? prod.iconName : 'local_mall'}
                         </span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-extrabold text-white">
-                          {item.productName}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-extrabold text-white">
+                            {item.productName}
+                          </h4>
+                          {item.isUnverified && (
+                            <span className="text-[10px] text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold">
+                              ⚠️ Unverified
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs font-mono text-primary-container font-bold">
                             ₹{item.price}
@@ -448,7 +513,9 @@ export const ProfileScreen: React.FC = () => {
         <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-4 flex justify-between items-center">
           <div>
             <h3 className="text-sm font-extrabold text-white">Delivery Preference</h3>
-            <p className="text-xs text-on-surface-variant">Offer room delivery to buyers</p>
+            <p className="text-xs text-on-surface-variant">
+              {user.deliveryOptIn ? 'Opted in to room delivery' : 'Pickup only from your room'}
+            </p>
           </div>
 
           <button
@@ -466,34 +533,33 @@ export const ProfileScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* NOTIFICATIONS SETTINGS & TEST CARD */}
-        <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-4 flex flex-col gap-3">
+        {/* NOTIFICATION PREFERENCES */}
+        <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-5 flex flex-col gap-3">
+          <h3 className="text-xs font-extrabold text-on-surface-variant uppercase tracking-wider">
+            Order Notifications
+          </h3>
+
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-base text-primary-container">notifications</span>
-                <span>Request Notifications</span>
-              </h3>
-              <p className="text-xs text-on-surface-variant mt-0.5">
+              <span className="text-sm font-extrabold text-white block">
+                Instant Request Alerts
+              </span>
+              <span className="text-xs text-on-surface-variant">
                 {permission === 'granted'
-                  ? 'Sound & vibration active for incoming requests'
+                  ? 'Active • Loud sound & vibration'
                   : permission === 'denied'
                   ? 'Blocked in browser settings'
-                  : 'Enable to get instant alerts'}
-              </p>
+                  : 'Requires browser permission'}
+              </span>
             </div>
 
-            {permission === 'granted' ? (
-              <span className="text-[10px] font-extrabold text-green-400 bg-green-500/15 border border-green-500/30 px-3 py-1 rounded-full uppercase">
-                Active 🟢
-              </span>
-            ) : (
+            {permission !== 'granted' && permission !== 'denied' && (
               <button
                 type="button"
                 onClick={requestNotificationPermission}
-                className="bg-primary-container text-black font-extrabold text-xs px-3.5 py-1.5 rounded-full uppercase tracking-wider neon-glow active:scale-95 cursor-pointer"
+                className="bg-primary-container/10 border border-primary-container/30 text-primary-container hover:bg-primary-container hover:text-black px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
               >
-                Enable
+                ENABLE ALERTS
               </button>
             )}
           </div>
@@ -544,40 +610,47 @@ export const ProfileScreen: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveListing} className="flex flex-col gap-4">
-              {/* Product Select */}
+              {/* Product Selection Button (Opens Cascading Picker) */}
               <div>
                 <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block mb-1.5 pl-1">
-                  Select Product
+                  Selected Product (Category → Subcategory → Item)
                 </label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => {
-                    const pid = e.target.value;
-                    setSelectedProductId(pid);
-                    const p = MOCK_PRODUCTS.find((prod) => prod.id === pid);
-                    if (p) setListingPrice(p.mrp);
-                  }}
+                
+                <button
+                  type="button"
+                  onClick={() => setIsCascadingPickerOpen(true)}
                   disabled={!!editingListing}
-                  className="w-full bg-[#1e2020] border border-[#333535] rounded-xl py-3 px-3 text-white font-sans text-sm focus:outline-none focus:border-primary-container cursor-pointer"
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 hover:border-primary-container rounded-2xl py-3 px-4 text-left transition-colors cursor-pointer flex items-center justify-between group"
                 >
-                  {PRODUCT_CATEGORIES.map((category) => {
-                    const groupItems = MOCK_PRODUCTS.filter((p) => p.category === category);
-                    if (groupItems.length === 0) return null;
-                    return (
-                      <optgroup
-                        key={category}
-                        label={category}
-                        className="bg-[#121414] text-primary-container font-extrabold"
-                      >
-                        {groupItems.map((prod) => (
-                          <option key={prod.id} value={prod.id} className="bg-[#121414] text-white font-normal">
-                            {prod.name} (MRP ₹{prod.mrp})
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
-                </select>
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-9 h-9 rounded-xl bg-primary-container/15 flex items-center justify-center text-primary-container shrink-0">
+                      <span className="material-symbols-outlined text-lg">
+                        {isUnverifiedSelection ? 'help_outline' : selectedProduct.iconName || 'shopping_bag'}
+                      </span>
+                    </div>
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-extrabold text-white truncate">
+                          {isUnverifiedSelection ? unverifiedName || selectedProduct.name : selectedProduct.name}
+                        </span>
+                        {isUnverifiedSelection && (
+                          <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded shrink-0">
+                            Unverified
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-on-surface-variant block truncate">
+                        {selectedProduct.category} • {selectedProduct.subcategory} (MRP ₹{selectedProduct.mrp})
+                      </span>
+                    </div>
+                  </div>
+
+                  {!editingListing && (
+                    <span className="material-symbols-outlined text-primary-container group-hover:translate-x-0.5 transition-transform text-lg shrink-0">
+                      edit
+                    </span>
+                  )}
+                </button>
               </div>
 
               {/* Quantity Input */}
@@ -603,13 +676,13 @@ export const ProfileScreen: React.FC = () => {
                     Your Price (₹)
                   </label>
                   <span className="text-[10px] text-primary-container font-bold">
-                    Max MRP: ₹{MOCK_PRODUCTS.find((p) => p.id === selectedProductId)?.mrp}
+                    Max MRP: ₹{selectedProduct.mrp}
                   </span>
                 </div>
                 <input
                   type="number"
                   min="1"
-                  max={MOCK_PRODUCTS.find((p) => p.id === selectedProductId)?.mrp}
+                  max={selectedProduct.mrp}
                   required
                   value={listingPrice}
                   onChange={(e) => setListingPrice(parseInt(e.target.value, 10) || 1)}
@@ -666,6 +739,15 @@ export const ProfileScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* CASCADING PRODUCT PICKER COMPONENT */}
+      <CascadingProductPicker
+        isOpen={isCascadingPickerOpen}
+        onClose={() => setIsCascadingPickerOpen(false)}
+        onSelectProduct={handleSelectProductFromPicker}
+        allProducts={allProducts}
+        currentUserId={user.uid}
+      />
 
       {/* HOSTEL & ROOM PICKER MODAL */}
       {isPickerModalOpen && (
@@ -754,32 +836,29 @@ export const ProfileScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={handleInitiateLocationSave}
-                disabled={!numericRoom.trim()}
-                className={`flex-1 font-extrabold text-xs py-3 rounded-full uppercase tracking-wider cursor-pointer ${
-                  numericRoom.trim()
-                    ? 'bg-primary-container text-black neon-glow active:scale-95'
-                    : 'bg-[#242626] text-on-surface-variant/40 border border-[#333535] cursor-not-allowed'
-                }`}
+                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 cursor-pointer"
               >
-                Save Location
+                Save
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* EXPLICIT CONFIRMATION MODAL BEFORE COMMITTING LOCATION CHANGE */}
+      {/* CONFIRMATION MODAL FOR 14-DAY COOLDOWN */}
       {isConfirmModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#141616] border border-amber-500/40 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 text-center animate-scale-in shadow-2xl">
-            <span className="material-symbols-outlined text-4xl text-amber-400 mx-auto">warning</span>
+          <div className="bg-[#141616] border border-amber-500/40 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 animate-scale-in">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+              <span className="material-symbols-outlined text-2xl">warning</span>
+            </div>
 
-            <h3 className="text-base font-extrabold text-white leading-snug">
-              Change to {selectedHostel} Hostel, Room {newRoom.trim().toUpperCase()}?
+            <h3 className="text-base font-extrabold text-white text-center uppercase tracking-tight">
+              Lock Location for 14 Days?
             </h3>
 
-            <p className="text-xs text-on-surface-variant leading-relaxed">
-              You can only change your hostel once every 14 days after this. Make sure this is correct before confirming.
+            <p className="text-xs text-on-surface-variant text-center leading-relaxed">
+              Updating your hostel to <strong className="text-primary-container">{selectedHostel} Hostel</strong>, Room <strong className="text-white">{newRoom}</strong> will start a <strong className="text-amber-400">14-day lock</strong> during which you cannot change your hostel again.
             </p>
 
             <div className="flex gap-3 mt-2">
@@ -793,17 +872,17 @@ export const ProfileScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmHostelChange}
-                className="flex-1 bg-primary-container text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider neon-glow cursor-pointer active:scale-95 transition-all"
+                className="flex-1 bg-amber-500 text-black font-extrabold text-xs py-3 rounded-full uppercase tracking-wider hover:brightness-110 cursor-pointer shadow-lg"
               >
-                Confirm Change
+                Confirm Lock
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <BottomNavBar />
+      {/* Docked Navigation Bar */}
+      <BottomNavBar activeTab="profile" />
     </div>
   );
 };

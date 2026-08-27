@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { MOCK_PRODUCTS, PRODUCT_CATEGORIES } from '../data/mockCatalog';
+import { Product } from '../types/catalog';
+import { MOCK_PRODUCTS, getProductById } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
+import { CascadingProductPicker } from '../components/CascadingProductPicker';
 import { HostelName } from '../types/user';
 import { FirestoreListing, subscribeToHostelListings } from '../firebase/listings';
+import { subscribeToMasterProducts } from '../firebase/masterCatalog';
 import {
   WeeklySalesDoc,
   ProductSuggestionDoc,
@@ -30,6 +33,17 @@ export const LeaderboardScreen: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'hostels' | 'products'>('hostels');
 
+  // Real-time Master Catalog Products from Firestore
+  const [masterProducts, setMasterProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToMasterProducts((items) => {
+      setMasterProducts(items);
+    });
+    return () => unsub();
+  }, []);
+
+  const allProducts = masterProducts.length > 0 ? masterProducts : MOCK_PRODUCTS;
+
   if (loading) {
     return (
       <div className="bg-[#050505] min-h-screen w-full flex items-center justify-center text-primary-container">
@@ -52,7 +66,8 @@ export const LeaderboardScreen: React.FC = () => {
 
   // Modal State
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState(MOCK_PRODUCTS[0].id);
+  const [isCascadingPickerOpen, setIsCascadingPickerOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product>(allProducts[0] || MOCK_PRODUCTS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Subscribe to Firestore collections live
@@ -84,7 +99,7 @@ export const LeaderboardScreen: React.FC = () => {
   // Duplicate in-stock check: check if selected product is currently available from ANOTHER seller in this hostel
   const activeListingInStock = hostelListings.find(
     (l) =>
-      l.productId === selectedProductId &&
+      l.productId === selectedProduct.id &&
       l.isSellerAwake &&
       l.quantity > 0 &&
       (!user.uid || l.sellerUid !== user.uid)
@@ -93,7 +108,7 @@ export const LeaderboardScreen: React.FC = () => {
   // Check if current user themselves is actively selling this selected product
   const isUserSelfSelling = hostelListings.some(
     (l) =>
-      l.productId === selectedProductId &&
+      l.productId === selectedProduct.id &&
       l.isSellerAwake &&
       l.quantity > 0 &&
       user.uid &&
@@ -110,8 +125,8 @@ export const LeaderboardScreen: React.FC = () => {
     };
   }).sort((a, b) => b.trades - a.trades);
 
-  // Map product leaderboard for current user's hostel (showing 0 for products with no sales doc yet)
-  const productLeaderboard = MOCK_PRODUCTS.map((p) => {
+  // Map product leaderboard for current user's hostel across all products
+  const productLeaderboard = allProducts.map((p) => {
     const saleDoc = myHostelSales.find((s) => s.productId === p.id);
     return {
       ...p,
@@ -135,23 +150,25 @@ export const LeaderboardScreen: React.FC = () => {
     }
   };
 
-  // Submit new suggestion from pre-approved dropdown list
+  // Submit new suggestion from 3-level picker selection
   const handleAddSuggestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user.uid) return;
 
-    const prod = MOCK_PRODUCTS.find((p) => p.id === selectedProductId) || MOCK_PRODUCTS[0];
-
     setIsSubmitting(true);
     try {
       if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-      await suggestProductDoc(userHostel, prod.id, prod.name, user.uid);
+      await suggestProductDoc(userHostel, selectedProduct.id, selectedProduct.name, user.uid);
       setIsSuggestModalOpen(false);
     } catch (err) {
       console.error('Failed to suggest product:', err);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSelectProductFromPicker = (prod: Product) => {
+    setSelectedProduct(prod);
   };
 
   return (
@@ -313,7 +330,7 @@ export const LeaderboardScreen: React.FC = () => {
                         {product.name}
                       </h3>
                       <span className="text-xs text-on-surface-variant font-mono">
-                        MRP ₹{product.mrp}
+                        {product.category} • MRP ₹{product.mrp}
                       </span>
                     </div>
                   </div>
@@ -398,7 +415,7 @@ export const LeaderboardScreen: React.FC = () => {
         )}
       </main>
 
-      {/* Suggestion Modal with Pre-Approved Categorized Dropdown (No Free Text) */}
+      {/* Suggestion Modal with 3-Level Cascading Product Picker */}
       {isSuggestModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#121414] border border-primary-container/40 rounded-3xl p-6 w-full max-w-sm flex flex-col gap-4 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
@@ -416,38 +433,40 @@ export const LeaderboardScreen: React.FC = () => {
             </div>
 
             <p className="text-xs text-on-surface-variant leading-relaxed">
-              Select a pre-approved product to request sellers to stock in {userHostel}:
+              Select a product from the catalog to request sellers to stock in {userHostel}:
             </p>
 
             <form onSubmit={handleAddSuggestion} className="flex flex-col gap-4">
-              {/* Strictly Dropdown Selection - Pre-Approved Categorized Products */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
-                  Select Product
+              {/* Product Selection Button */}
+              <div>
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider block mb-1.5">
+                  Selected Product
                 </label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container transition-colors cursor-pointer text-sm"
+                <button
+                  type="button"
+                  onClick={() => setIsCascadingPickerOpen(true)}
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 hover:border-primary-container rounded-2xl py-3.5 px-4 text-left transition-colors cursor-pointer flex items-center justify-between group"
                 >
-                  {PRODUCT_CATEGORIES.map((category) => {
-                    const groupItems = MOCK_PRODUCTS.filter((p) => p.category === category);
-                    if (groupItems.length === 0) return null;
-                    return (
-                      <optgroup
-                        key={category}
-                        label={category}
-                        className="bg-[#121414] text-primary-container font-extrabold"
-                      >
-                        {groupItems.map((prod) => (
-                          <option key={prod.id} value={prod.id} className="bg-[#121414] text-white font-normal">
-                            {prod.name} (MRP ₹{prod.mrp})
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
-                </select>
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-9 h-9 rounded-xl bg-primary-container/15 flex items-center justify-center text-primary-container shrink-0">
+                      <span className="material-symbols-outlined text-lg">
+                        {selectedProduct.iconName || 'shopping_bag'}
+                      </span>
+                    </div>
+                    <div className="truncate">
+                      <h3 className="text-sm font-extrabold text-white truncate">
+                        {selectedProduct.name}
+                      </h3>
+                      <span className="text-[11px] text-on-surface-variant block truncate">
+                        {selectedProduct.category} • {selectedProduct.subcategory} (MRP ₹{selectedProduct.mrp})
+                      </span>
+                    </div>
+                  </div>
+
+                  <span className="material-symbols-outlined text-primary-container group-hover:translate-x-0.5 transition-transform text-lg shrink-0">
+                    edit
+                  </span>
+                </button>
               </div>
 
               {/* USER SELF-SELLING WARNING OR DUPLICATE IN-STOCK ALERT BANNER */}
@@ -469,7 +488,7 @@ export const LeaderboardScreen: React.FC = () => {
                     type="button"
                     onClick={() => {
                       setIsSuggestModalOpen(false);
-                      navigate(`/catalog/${selectedProductId}`);
+                      navigate(`/catalog/${selectedProduct.id}`);
                     }}
                     className="bg-amber-500 text-black font-extrabold text-xs py-2 px-3.5 rounded-xl uppercase tracking-wider hover:brightness-110 flex items-center justify-center gap-1.5 cursor-pointer self-start shadow-md transition-all active:scale-95"
                   >
@@ -503,6 +522,15 @@ export const LeaderboardScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* CASCADING PRODUCT PICKER */}
+      <CascadingProductPicker
+        isOpen={isCascadingPickerOpen}
+        onClose={() => setIsCascadingPickerOpen(false)}
+        onSelectProduct={handleSelectProductFromPicker}
+        allProducts={allProducts}
+        currentUserId={user.uid}
+      />
 
       {/* Docked Navigation Bar */}
       <BottomNavBar activeTab="rank" />

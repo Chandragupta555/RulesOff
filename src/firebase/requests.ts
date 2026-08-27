@@ -3,7 +3,9 @@ import {
   doc,
   addDoc,
   updateDoc,
+  setDoc,
   getDoc,
+  getDocs,
   query,
   where,
   onSnapshot,
@@ -39,6 +41,48 @@ export interface FirestoreRequest {
 const REQUESTS_COLLECTION = 'requests';
 const LISTINGS_COLLECTION = 'listings';
 const WEEKLY_SALES_COLLECTION = 'weeklySales';
+const USERS_COLLECTION = 'users';
+
+/**
+ * Calculate and save a seller's real reliability score in Firestore based on request history.
+ * reliabilityScore = (fulfilled requests / accepted+fulfilled requests) * 100
+ * Defaults to 100 for sellers with no accepted requests yet.
+ */
+export const recalculateAndSaveSellerReliabilityScore = async (
+  sellerUid: string
+): Promise<number> => {
+  if (!sellerUid) return 100;
+
+  try {
+    const colRef = collection(db, REQUESTS_COLLECTION);
+    const q = query(colRef, where('sellerUid', '==', sellerUid));
+    const snap = await getDocs(q);
+
+    let acceptedCount = 0;
+    let fulfilledCount = 0;
+
+    snap.docs.forEach((d) => {
+      const status = d.data().status as RequestStatus;
+      if (status === 'accepted' || status === 'fulfilled') {
+        acceptedCount++;
+        if (status === 'fulfilled') {
+          fulfilledCount++;
+        }
+      }
+    });
+
+    const score = acceptedCount > 0 ? Math.round((fulfilledCount / acceptedCount) * 100) : 100;
+
+    // Persist to users/{sellerUid} document in Firestore
+    const userDocRef = doc(db, USERS_COLLECTION, sellerUid);
+    await setDoc(userDocRef, { reliabilityScore: score }, { merge: true });
+
+    return score;
+  } catch (err) {
+    console.error('[Firebase requests] Failed to recalculate reliability score:', err);
+    return 100;
+  }
+};
 
 /**
  * Create a direct buyer-to-seller request document in Firestore.
@@ -72,7 +116,6 @@ export const subscribeToIncomingRequests = (
         id: d.id,
         ...(d.data() as Omit<FirestoreRequest, 'id'>),
       }));
-      // Sort newest first
       items.sort((a, b) => b.createdAt - a.createdAt);
       onUpdate(items);
     },
@@ -99,7 +142,6 @@ export const subscribeToOutgoingRequests = (
         id: d.id,
         ...(d.data() as Omit<FirestoreRequest, 'id'>),
       }));
-      // Sort newest first
       items.sort((a, b) => b.createdAt - a.createdAt);
       onUpdate(items);
     },
@@ -138,9 +180,11 @@ export const cancelRequestDoc = async (requestId: string): Promise<void> => {
  * Uses a Firestore TRANSACTION strictly following Firestore's required order:
  * 1) ALL READS FIRST: Request doc, Listing doc, and Weekly Sales doc.
  * 2) ALL WRITES SECOND: Request status update, Listing quantity decrement, and Weekly Sales update/set.
+ * 3) Recalculates and updates seller's reliabilityScore in Firestore.
  */
 export const fulfillRequestDoc = async (requestId: string): Promise<void> => {
   const reqRef = doc(db, REQUESTS_COLLECTION, requestId);
+  let sellerUid = '';
 
   await runTransaction(db, async (transaction) => {
     // =======================================================
@@ -153,6 +197,7 @@ export const fulfillRequestDoc = async (requestId: string): Promise<void> => {
       throw new Error('Request document not found.');
     }
     const reqData = reqSnap.data() as FirestoreRequest;
+    sellerUid = reqData.sellerUid;
 
     if (reqData.status !== 'accepted') {
       throw new Error(`Cannot fulfill request with status '${reqData.status}'. Must be accepted.`);
@@ -201,4 +246,9 @@ export const fulfillRequestDoc = async (requestId: string): Promise<void> => {
       });
     }
   });
+
+  // Recalculate seller's reliability score immediately after transaction
+  if (sellerUid) {
+    await recalculateAndSaveSellerReliabilityScore(sellerUid);
+  }
 };

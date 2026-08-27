@@ -11,17 +11,26 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() == 'aadityagarg.bt24meta@pec.edu.in'
+      );
+    }
+
     // Users Collection Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId);
     }
 
-    // Listings Collection Rules
+    // Listings Collection Rules (Sellers manage their own; Admin can update upon product approval)
     match /listings/{listingId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.sellerUid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.sellerUid == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (
+        resource.data.sellerUid == request.auth.uid || isAdmin()
+      );
     }
 
     // Requests Collection Rules
@@ -38,7 +47,32 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && resource.data.buyerUid == request.auth.uid;
     }
 
-    // Weekly Sales Aggregation Rules (Hardened defense-in-depth on Spark plan)
+    // Product Requests Collection Rules
+    match /productRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.submittedBy == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Master Catalog Products Collection Rules
+    match /masterProducts/{productId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Catalog Taxonomy (Categories & Subcategories) Collection Rules
+    match /catalogTaxonomy/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Legacy Approved Products Collection Rules (Backward Compatibility)
+    match /approvedProducts/{productId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Weekly Sales Aggregation Rules
     match /weeklySales/{salesId} {
       allow read: if isAuthenticated();
 

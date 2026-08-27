@@ -27,6 +27,8 @@ export interface FirestoreListing {
   isSellerAwake: boolean;
   deliveryOptIn: boolean;
   deliveryFee?: number;
+  isUnverified?: boolean;
+  unverifiedProductName?: string;
   createdAt: number;
 }
 

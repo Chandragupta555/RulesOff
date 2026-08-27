@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { MOCK_PRODUCTS, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
+import { Product, Listing } from '../types/catalog';
+import { MOCK_PRODUCTS, getProductById, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { FirestoreListing, subscribeToHostelListings } from '../firebase/listings';
-import { Listing } from '../types/catalog';
+import { subscribeToApprovedProducts } from '../firebase/productRequests';
 
 export const RoomListScreen: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -13,6 +14,18 @@ export const RoomListScreen: React.FC = () => {
 
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivery'>('all');
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
+  const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
+
+  // Subscribe to real-time approved products
+  useEffect(() => {
+    const unsub = subscribeToApprovedProducts((items) => {
+      setApprovedProducts(items);
+    });
+    return () => unsub();
+  }, []);
+
+  const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
+  const product = getProductById(productId || '', allProducts);
 
   if (loading) {
     return (
@@ -26,7 +39,6 @@ export const RoomListScreen: React.FC = () => {
     return <Navigate to="/setup" replace />;
   }
 
-  const product = MOCK_PRODUCTS.find((p) => p.id === productId) || MOCK_PRODUCTS[0];
   const userHostel = user.hostel;
   const userRoom = user.roomNumber;
 
@@ -42,7 +54,7 @@ export const RoomListScreen: React.FC = () => {
   const productListings: Listing[] = hostelListings
     .filter(
       (l) =>
-        l.productId === product.id &&
+        (l.productId === product.id || (product.isUnverified && l.unverifiedProductName === product.name)) &&
         l.isSellerAwake &&
         l.quantity > 0 &&
         (!user.uid || l.sellerUid !== user.uid)
@@ -59,11 +71,16 @@ export const RoomListScreen: React.FC = () => {
       isSellerAwake: l.isSellerAwake,
       deliveryOptIn: l.deliveryOptIn,
       deliveryFee: l.deliveryFee,
+      isUnverified: l.isUnverified,
+      unverifiedProductName: l.unverifiedProductName,
     }));
 
   // Check if active stock exists for this product in hostel, but ALL of it belongs to current user
   const activeProductListingsInHostel = hostelListings.filter(
-    (l) => l.productId === product.id && l.isSellerAwake && l.quantity > 0
+    (l) =>
+      (l.productId === product.id || (product.isUnverified && l.unverifiedProductName === product.name)) &&
+      l.isSellerAwake &&
+      l.quantity > 0
   );
   const isOnlyUserStocking =
     activeProductListingsInHostel.length > 0 &&
@@ -98,178 +115,166 @@ export const RoomListScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate('/catalog')}
-          className="text-on-surface-variant hover:opacity-80 active:scale-95 transition-transform w-10 h-10 rounded-full bg-[#1e2020] flex items-center justify-center cursor-pointer"
+          className="w-9 h-9 rounded-full bg-[#1e2020] flex items-center justify-center border border-[#333535] active:scale-95 transition-transform cursor-pointer"
         >
-          <span className="material-symbols-outlined text-xl">arrow_back</span>
+          <span className="material-symbols-outlined text-on-surface text-xl">arrow_back</span>
         </button>
 
-        <div className="flex flex-col items-center">
-          <h1 className="text-xl font-extrabold text-primary-container tracking-tight uppercase italic drop-shadow-[0_0_8px_rgba(255,95,31,0.4)]">
-            {product.name}
-          </h1>
-          <span className="text-[10px] text-on-surface-variant font-mono">
-            {userHostel} Hostel • Your Room {userRoom}
+        <div className="text-center flex flex-col items-center">
+          <span className="text-[10px] font-semibold text-primary-container uppercase tracking-wider">
+            {userHostel} Hostel Shelf
           </span>
+          <h1 className="text-base font-extrabold text-on-surface tracking-tight uppercase italic flex items-center gap-1.5">
+            <span>{product.name}</span>
+            {product.isUnverified && (
+              <span className="text-[9px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded not-italic">
+                Unverified
+              </span>
+            )}
+          </h1>
         </div>
 
-        <div className="w-10"></div>
+        <div className="w-9"></div>
       </header>
 
-      {/* Main Content Canvas */}
-      <main className="flex-1 pt-4 px-container-padding flex flex-col gap-4 max-w-md mx-auto w-full">
-        {/* Product Banner Summary Card */}
-        <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden">
-          <img
-            src={product.imageUrl}
-            alt={product.name}
-            className="w-16 h-16 object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
-          />
-          <div className="flex flex-col flex-1">
-            <h2 className="text-lg font-extrabold text-white leading-tight">
-              {product.name}
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-base font-extrabold text-primary-container font-mono">
-                ₹{lowestPrice}
+      {/* Main Canvas */}
+      <main className="flex-1 px-container-padding pt-4 flex flex-col gap-5 max-w-md mx-auto w-full">
+        {/* Product Hero Banner */}
+        <div className="bg-[#121212] border border-[#1F1F1F] rounded-3xl p-5 flex items-center justify-between relative overflow-hidden shadow-xl">
+          <div className="flex items-center gap-4 z-10">
+            <img
+              src={product.imageUrl}
+              alt={product.name}
+              className="w-16 h-16 object-contain rounded-2xl bg-black/40 p-1.5 border border-[#333535] drop-shadow-md"
+            />
+            <div>
+              <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
+                {product.category} • {product.subcategory}
               </span>
-              <span className="text-xs text-on-surface-variant line-through font-mono">
-                ₹{product.mrp} MRP
-              </span>
+              <h2 className="text-lg font-extrabold text-white leading-tight">
+                {product.name}
+              </h2>
+              <div className="flex items-center gap-2 mt-1 font-mono">
+                <span className="text-sm font-extrabold text-primary-container">
+                  Best ₹{lowestPrice}
+                </span>
+                <span className="text-xs text-on-surface-variant line-through">
+                  MRP ₹{product.mrp}
+                </span>
+              </div>
             </div>
-            <p className="text-[11px] text-on-surface-variant/80 mt-1 line-clamp-1">
-              {product.description}
-            </p>
           </div>
         </div>
 
-        {/* Filters Row */}
-        <div className="flex justify-between items-center bg-[#121212] border border-[#1F1F1F] rounded-xl p-1.5">
+        {/* Filter Switcher */}
+        <div className="flex bg-[#1e2020] rounded-full p-1 border border-[#333535]/40">
           <button
             type="button"
             onClick={() => setDeliveryFilter('all')}
-            className={`flex-1 py-2 text-xs font-extrabold rounded-lg uppercase tracking-wider transition-all cursor-pointer ${deliveryFilter === 'all'
-              ? 'bg-primary-container text-black neon-glow'
-              : 'text-on-surface-variant hover:text-white'
-              }`}
+            className={`flex-1 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-150 cursor-pointer ${
+              deliveryFilter === 'all'
+                ? 'bg-primary-container text-black neon-glow shadow-md'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
           >
-            All Rooms ({totalRooms})
+            All Sellers ({productListings.length})
           </button>
+
           <button
             type="button"
             onClick={() => setDeliveryFilter('delivery')}
-            className={`flex-1 py-2 text-xs font-extrabold rounded-lg uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 ${deliveryFilter === 'delivery'
-              ? 'bg-primary-container text-black neon-glow'
-              : 'text-on-surface-variant hover:text-white'
-              }`}
+            className={`flex-1 py-2 rounded-full font-bold text-xs uppercase tracking-wider transition-all duration-150 cursor-pointer flex items-center justify-center gap-1 ${
+              deliveryFilter === 'delivery'
+                ? 'bg-primary-container text-black neon-glow shadow-md'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
           >
-            <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
-            <span>Delivery Only</span>
+            <span>🚚 Delivery Only</span>
           </button>
         </div>
 
-        {/* Section Title */}
-        <div className="flex justify-between items-center px-1">
-          <h3 className="text-xs font-extrabold text-on-surface-variant uppercase tracking-wider">
-            Available Rooms Near You ({filteredListings.length})
-          </h3>
-          <span className="text-[10px] text-primary-container font-mono font-bold">
-            Sorted by Proximity
-          </span>
-        </div>
+        {/* Room Sellers List */}
+        <div className="flex flex-col gap-3">
+          {filteredListings.length === 0 ? (
+            <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-3xl p-6 text-center flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#242626] flex items-center justify-center text-on-surface-variant">
+                <span className="material-symbols-outlined text-2xl">sentiment_dissatisfied</span>
+              </div>
 
-        {/* Room Cards List */}
-        {filteredListings.length === 0 ? (
-          <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3">
-            <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">
-              {isOnlyUserStocking ? 'storefront' : 'sentiment_dissatisfied'}
-            </span>
-            <div>
-              <h4 className="text-sm font-bold text-white">
-                {isOnlyUserStocking ? 'You Are The Only Seller' : 'No Sellers Found'}
-              </h4>
-              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                {isOnlyUserStocking
-                  ? "You're the only one stocking this right now — list more or wait for another seller!"
-                  : `No rooms in ${userHostel} are currently selling ${product.name} matching your filter.`}
-              </p>
+              {isOnlyUserStocking ? (
+                <div>
+                  <h3 className="text-sm font-bold text-amber-400">
+                    You are the only seller stocking this tonight!
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                    Your room currently has active stock for this item. Other students in {userHostel} will see your listing on their shelf!
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    No active sellers nearby right now
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                    Nobody in {userHostel} has this item listed tonight. Check back later or suggest it on the Leaderboard!
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {filteredListings.map((listing) => {
-              const prox = getProximityLabel(userRoom, listing.sellerRoom);
+          ) : (
+            filteredListings.map((listing) => {
+              const proximityLabel = getProximityLabel(userRoom, listing.sellerRoom);
+
               return (
                 <div
                   key={listing.id}
-                  className="bg-[#121212] border border-[#ff5f1f]/30 hover:border-primary-container rounded-2xl p-4 flex flex-col gap-3 relative transition-all duration-200 shadow-lg"
+                  className="bg-[#121212] border border-[#1F1F1F] hover:border-primary-container/40 rounded-3xl p-4 flex justify-between items-center transition-all duration-200"
                 >
-                  {/* Header Row: Room & Proximity Badge */}
-                  <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-xl bg-primary-container/15 text-primary-container font-extrabold text-sm flex items-center justify-center border border-primary-container/30">
-                        {listing.sellerRoom}
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-                          <span>Room {listing.sellerRoom}</span>
-                          <span className="text-[10px] font-normal text-on-surface-variant">
-                            ({listing.sellerName})
-                          </span>
-                        </h4>
-                        <span className="text-xs text-primary-container font-bold">
-                          {prox}
-                        </span>
-                      </div>
+                      <h3 className="text-base font-extrabold text-white">
+                        Room {listing.sellerRoom}
+                      </h3>
+                      <span className="text-[10px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                        {proximityLabel}
+                      </span>
                     </div>
 
-                    <div className="flex flex-col items-end">
-                      <span className="text-base font-extrabold text-primary-container font-mono">
+                    <p className="text-xs text-on-surface-variant font-medium">
+                      Seller: <strong className="text-white">{listing.sellerName}</strong>
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm font-mono font-extrabold text-primary-container">
                         ₹{listing.price}
                       </span>
-                      <span className="text-[10px] text-on-surface-variant font-mono">
-                        {listing.quantity} left
+                      <span className="text-[10px] text-on-surface-variant bg-[#1e2020] px-2 py-0.5 rounded-full font-mono border border-[#333535]">
+                        {listing.quantity} in stock
                       </span>
+                      {listing.deliveryOptIn && (
+                        <span className="text-[10px] text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 font-bold">
+                          🚚 Delivery (+₹{listing.deliveryFee || 5})
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Badges & Features Row */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {listing.deliveryOptIn ? (
-                      <span className="text-[10px] font-bold text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs">local_shipping</span>
-                        <span>Delivery Available (+₹{listing.deliveryFee || 5})</span>
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-bold text-on-surface-variant bg-[#1e2020] px-2.5 py-1 rounded-full border border-[#333535]">
-                        Pickup Only
-                      </span>
-                    )}
-
-                    <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-                      ⚡ Immediate Pickup
-                    </span>
-                  </div>
-
-                  {/* Action Button */}
                   <button
                     type="button"
                     onClick={() => handleRequestClick(listing.id)}
-                    className="w-full bg-primary-container text-black font-extrabold text-xs uppercase tracking-widest py-3 rounded-xl hover:brightness-110 active:scale-98 transition-all neon-glow flex items-center justify-center gap-2 cursor-pointer mt-1"
+                    className="bg-primary-container text-black font-extrabold text-xs px-4 py-3 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-md shrink-0"
                   >
-                    <span>Request from Room {listing.sellerRoom}</span>
-                    <span className="material-symbols-outlined text-sm font-bold">
-                      chevron_right
-                    </span>
+                    Request
                   </button>
                 </div>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNavBar />
+      {/* Docked Navigation Bar */}
+      <BottomNavBar activeTab="shelf" />
     </div>
   );
 };

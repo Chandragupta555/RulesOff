@@ -1,21 +1,26 @@
 export type ProductCategory =
+  | 'Chips & Wafers'
+  | 'Namkeen & Bhujia'
   | 'Instant Food'
-  | 'Chips & Namkeen'
   | 'Biscuits & Cookies'
   | 'Chocolates & Sweets'
   | 'Cold Drinks & Juices'
-  | 'Energy Drinks'
-  | 'Dairy & Milk-based'
-  | 'Ice Cream & Desserts';
+  | 'Energy & Health Drinks'
+  | 'Dairy & Milk-Based'
+  | 'Ice Cream & Frozen Desserts'
+  | 'Bread, Buns & Bakery';
 
 export interface Product {
   id: string;
   name: string;
   category: ProductCategory;
+  subcategory: string;
   mrp: number; // Maximum Retail Price (INR)
   imageUrl: string;
   iconName: string;
   description: string;
+  isUnverified?: boolean;
+  isCustomApproved?: boolean;
 }
 
 export interface Listing {
@@ -31,6 +36,8 @@ export interface Listing {
   deliveryOptIn: boolean;
   deliveryFee?: number;
   pendingRequestsCount?: number;
+  isUnverified?: boolean;
+  unverifiedProductName?: string;
 }
 
 export interface ProductAggregate {
