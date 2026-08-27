@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Navigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
+import { Product } from '../types/catalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 import {
   FirestoreRequest,
@@ -12,6 +13,7 @@ import {
   cancelRequestDoc,
   fulfillRequestDoc
 } from '../firebase/requests';
+import { subscribeToApprovedProducts } from '../firebase/productRequests';
 
 export const RequestsScreen: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,8 +24,17 @@ export const RequestsScreen: React.FC = () => {
 
   const [incomingRequests, setIncomingRequests] = useState<FirestoreRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FirestoreRequest[]>([]);
+  const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
+
+  // Subscribe to real-time approved catalog items for thumbnail resolution
+  useEffect(() => {
+    const unsub = subscribeToApprovedProducts((items) => {
+      setApprovedProducts(items);
+    });
+    return () => unsub();
+  }, []);
 
   // Subscribe to real-time Firestore requests for authenticated user UID
   useEffect(() => {
@@ -56,6 +67,7 @@ export const RequestsScreen: React.FC = () => {
   }
 
   const userRoom = user.roomNumber;
+  const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
 
   const handleTabChange = (tab: 'incoming' | 'outgoing') => {
     setActiveTab(tab);
@@ -185,12 +197,13 @@ export const RequestsScreen: React.FC = () => {
           <div className="flex flex-col gap-3">
             {incomingRequests.length > 0 ? (
               incomingRequests.map((req) => {
-                const product = MOCK_PRODUCTS.find((p) => p.id === req.productId) || MOCK_PRODUCTS[0];
+                const matchedProduct = allProducts.find((p) => p.id === req.productId);
+                const imageUrl =
+                  matchedProduct?.imageUrl ||
+                  'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
                 const isPending = req.status === 'pending';
                 const isAccepted = req.status === 'accepted';
                 const isFulfilled = req.status === 'fulfilled';
-                const isDeclined = req.status === 'declined';
-                const isCancelled = req.status === 'cancelled';
 
                 return (
                   <div
@@ -233,8 +246,8 @@ export const RequestsScreen: React.FC = () => {
                     <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-xl p-3 flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <img
-                          src={product.imageUrl}
-                          alt={product.name}
+                          src={imageUrl}
+                          alt={req.productName}
                           className="w-10 h-10 object-contain rounded-lg bg-black/40 p-1"
                         />
                         <div>
@@ -309,12 +322,13 @@ export const RequestsScreen: React.FC = () => {
           <div className="flex flex-col gap-3">
             {outgoingRequests.length > 0 ? (
               outgoingRequests.map((req) => {
-                const product = MOCK_PRODUCTS.find((p) => p.id === req.productId) || MOCK_PRODUCTS[0];
+                const matchedProduct = allProducts.find((p) => p.id === req.productId);
+                const imageUrl =
+                  matchedProduct?.imageUrl ||
+                  'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
                 const isPending = req.status === 'pending';
                 const isAccepted = req.status === 'accepted';
                 const isFulfilled = req.status === 'fulfilled';
-                const isDeclined = req.status === 'declined';
-                const isCancelled = req.status === 'cancelled';
 
                 return (
                   <div
@@ -361,8 +375,8 @@ export const RequestsScreen: React.FC = () => {
                     <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-xl p-3 flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <img
-                          src={product.imageUrl}
-                          alt={product.name}
+                          src={imageUrl}
+                          alt={req.productName}
                           className="w-10 h-10 object-contain rounded-lg bg-black/40 p-1"
                         />
                         <div>

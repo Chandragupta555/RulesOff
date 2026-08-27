@@ -4,10 +4,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useUser } from '../context/UserContext';
 import { MOCK_PRODUCTS } from '../data/mockCatalog';
+import { Product } from '../types/catalog';
 import { RequestMethod } from '../types/request';
-import { createRequestDoc, FirestoreRequest } from '../firebase/requests';
+import { createRequestDoc } from '../firebase/requests';
 import { FirestoreListing } from '../firebase/listings';
 import { HostelName } from '../types/user';
+import { subscribeToApprovedProducts } from '../firebase/productRequests';
 
 export const RequestConfirmationScreen: React.FC = () => {
   const { listingId } = useParams<{ listingId: string }>();
@@ -18,10 +20,19 @@ export const RequestConfirmationScreen: React.FC = () => {
   const methodParam = (searchParams.get('method') as RequestMethod) || 'pickup';
 
   const [listing, setListing] = useState<FirestoreListing | null>(null);
+  const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
   const [loadingListing, setLoadingListing] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Subscribe to real-time approved catalog products for thumbnail matching
+  useEffect(() => {
+    const unsub = subscribeToApprovedProducts((items) => {
+      setApprovedProducts(items);
+    });
+    return () => unsub();
+  }, []);
 
   // Load target listing from Firestore
   useEffect(() => {
@@ -52,11 +63,20 @@ export const RequestConfirmationScreen: React.FC = () => {
     return <Navigate to="/setup" replace />;
   }
 
-  const product = MOCK_PRODUCTS.find((p) => p.id === listing?.productId) || MOCK_PRODUCTS[0];
-  const maxQty = Math.max(1, listing?.quantity || 1);
+  const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
+  const matchedProduct = listing?.productId
+    ? allProducts.find((p) => p.id === listing.productId)
+    : null;
 
-  const deliveryFee = methodParam === 'delivery' ? (listing?.deliveryFee || 5) : 0;
-  const itemTotal = (listing?.price || product.mrp) * quantity;
+  const displayProductName = listing?.unverifiedProductName || listing?.productName || 'Product';
+  const displayImageUrl =
+    matchedProduct?.imageUrl ||
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
+
+  const maxQty = Math.max(1, listing?.quantity || 1);
+  const unitPrice = listing?.price || 0;
+  const deliveryFee = methodParam === 'delivery' ? (listing?.deliveryFee ?? 5) : 0;
+  const itemTotal = unitPrice * quantity;
   const grandTotal = itemTotal + deliveryFee;
 
   const handleSendRequest = async () => {
@@ -69,15 +89,15 @@ export const RequestConfirmationScreen: React.FC = () => {
       await createRequestDoc({
         buyerUid: user.uid,
         buyerName: user.name || 'PEC Student',
-        buyerRoom: user.roomNumber,
-        buyerHostel: user.hostel as HostelName,
+        buyerRoom: user.roomNumber || '',
+        buyerHostel: (user.hostel as HostelName) || 'Shivalik',
         sellerUid: listing.sellerUid,
         sellerName: listing.sellerName,
         sellerRoom: listing.sellerRoom,
         sellerHostel: listing.hostel,
         listingId: listing.id || listingId || '',
-        productId: product.id,
-        productName: product.name,
+        productId: listing.productId,
+        productName: listing.unverifiedProductName || listing.productName,
         quantity,
         method: methodParam,
         price: listing.price,
@@ -96,14 +116,6 @@ export const RequestConfirmationScreen: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  if (loadingListing) {
-    return (
-      <div className="bg-[#121414] min-h-screen flex items-center justify-center text-primary-container">
-        <span className="material-symbols-outlined text-4xl animate-spin">refresh</span>
-      </div>
-    );
-  }
 
   return (
     <div className="font-sans min-h-screen w-full flex flex-col select-none bg-[#121414] text-[#e2e2e2] pb-12">
@@ -129,20 +141,20 @@ export const RequestConfirmationScreen: React.FC = () => {
         {/* Product & Seller Summary Card */}
         <div className="bg-[#121212] border border-[#1F1F1F] rounded-2xl p-4 flex gap-4 items-center relative overflow-hidden">
           <img
-            src={product.imageUrl}
-            alt={product.name}
+            src={displayImageUrl}
+            alt={displayProductName}
             className="w-20 h-20 object-cover rounded-xl bg-black border border-[#333535]/50 flex-shrink-0"
           />
           <div className="flex flex-col flex-1 min-w-0">
             <h2 className="text-xl font-extrabold text-on-surface truncate">
-              {product.name}
+              {displayProductName}
             </h2>
             <p className="text-xs text-on-surface-variant mt-0.5">
               Seller: <span className="font-semibold text-white">{listing?.sellerName || 'PEC Student'}</span> (Room {listing?.sellerRoom})
             </p>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-xs font-bold text-primary-container bg-primary-container/10 px-2.5 py-0.5 rounded-full border border-primary-container/30">
-                ₹{listing?.price || product.mrp} / unit
+                ₹{unitPrice} / unit
               </span>
               <span className="text-[10px] font-semibold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                 Awake
@@ -210,7 +222,7 @@ export const RequestConfirmationScreen: React.FC = () => {
 
           <div className="flex justify-between text-xs text-on-surface">
             <span>
-              {product.name} x {quantity}
+              {displayProductName} x {quantity}
             </span>
             <span className="font-mono font-semibold">₹{itemTotal}</span>
           </div>
