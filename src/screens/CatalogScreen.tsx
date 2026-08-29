@@ -65,12 +65,10 @@ export const CatalogScreen: React.FC = () => {
         ? Math.min(...matchingListings.map((l) => l.price))
         : productMrp;
 
-    let badge: 'Almost Gone' | 'Last One' | 'Out of Stock' | undefined = undefined;
-    if (totalUnits === 0) {
-      badge = 'Out of Stock';
-    } else if (totalUnits === 1) {
+    let badge: 'Almost Gone' | 'Last One' | undefined = undefined;
+    if (totalUnits === 1) {
       badge = 'Last One';
-    } else if (totalUnits <= 3) {
+    } else if (totalUnits > 1 && totalUnits <= 3) {
       badge = 'Almost Gone';
     }
 
@@ -97,18 +95,13 @@ export const CatalogScreen: React.FC = () => {
     };
   });
 
-  // Dynamic Two-Tier Sort:
-  // Tier 1: In-Stock items (totalUnits > 0), sorted alphabetically by product name
-  // Tier 2: Out-of-Stock items (totalUnits === 0), sorted alphabetically by product name
-  const sortedAggregates = [...rawAggregates].sort((a, b) => {
-    const aInStock = a.totalUnits > 0;
-    const bInStock = b.totalUnits > 0;
-
-    if (aInStock && !bInStock) return -1;
-    if (!aInStock && bInStock) return 1;
-
-    return a.product.name.localeCompare(b.product.name, undefined, { sensitivity: 'base' });
-  });
+  // Filter out out-of-stock items (totalUnits === 0) completely from the live shelf view
+  // and sort the remaining in-stock items alphabetically by product name.
+  const sortedAggregates = rawAggregates
+    .filter((agg) => agg.totalUnits > 0)
+    .sort((a, b) =>
+      a.product.name.localeCompare(b.product.name, undefined, { sensitivity: 'base' })
+    );
 
   // Real-Time Search Filter: Filters sortedAggregates based on searchQuery
   const filteredAggregates = sortedAggregates.filter((agg) => {
@@ -216,46 +209,47 @@ export const CatalogScreen: React.FC = () => {
         {filteredAggregates.length === 0 ? (
           <div className="bg-[#181a1a] border border-[#2a2c2c] rounded-3xl p-8 text-center flex flex-col items-center gap-3 my-4">
             <div className="w-12 h-12 rounded-full bg-[#242626] flex items-center justify-center text-primary-container">
-              <span className="material-symbols-outlined text-2xl">search_off</span>
+              <span className="material-symbols-outlined text-2xl">
+                {searchQuery.trim() !== '' ? 'search_off' : 'inventory_2'}
+              </span>
             </div>
             <div>
               <h3 className="text-sm font-extrabold text-white">
-                No snacks match "{searchQuery}"
+                {searchQuery.trim() !== ''
+                  ? `No snacks match "${searchQuery}"`
+                  : 'Shelf is empty right now'}
               </h3>
               <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                Try checking for typos or searching by brand or category (e.g., "Kurkure", "Chips", "Noodles").
+                {searchQuery.trim() !== ''
+                  ? 'Try checking for typos or searching by brand or category (e.g., "Kurkure", "Chips", "Noodles").'
+                  : 'No active items in stock right now in your hostel. Check back later or add your items on the Profile screen!'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="mt-1 bg-primary-container text-black font-extrabold text-xs px-4 py-2 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 cursor-pointer transition-all active:scale-95"
-            >
-              Clear Search
-            </button>
+            {searchQuery.trim() !== '' && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="mt-1 bg-primary-container text-black font-extrabold text-xs px-4 py-2 rounded-full uppercase tracking-wider neon-glow hover:brightness-110 cursor-pointer transition-all active:scale-95"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {filteredAggregates.map((agg) => {
-              const isAvailable = agg.totalUnits > 0;
               return (
                 <div
                   key={agg.product.id}
                   onClick={() => handleCardClick(agg.product.id)}
-                  className={`bg-[#121212] border rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 cursor-pointer ${
-                    isAvailable
-                      ? 'border-[#ff5f1f]/50 hover:border-[#ff5f1f] neon-glow active:scale-95'
-                      : 'border-[#1F1F1F] opacity-75 hover:border-primary-container/30'
-                  }`}
+                  className="bg-[#121212] border border-[#ff5f1f]/50 hover:border-[#ff5f1f] neon-glow active:scale-95 rounded-2xl p-4 flex flex-col gap-3 relative overflow-hidden transition-all duration-200 cursor-pointer"
                 >
                   {/* Badge Tag */}
                   {agg.badge && (
                     <div className="absolute top-2 right-2 z-20">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                          agg.badge === 'Out of Stock'
-                            ? 'bg-error-container/20 text-error border-error'
-                            : agg.badge === 'Last One'
+                          agg.badge === 'Last One'
                             ? 'bg-error-container/20 text-error border-error animate-pulse'
                             : 'bg-primary-container/20 text-primary-container border-primary-container'
                         }`}
@@ -266,11 +260,7 @@ export const CatalogScreen: React.FC = () => {
                   )}
 
                   {/* Product Image Illustration */}
-                  <div
-                    className={`h-24 w-full flex items-center justify-center relative z-10 ${
-                      !isAvailable ? 'grayscale' : ''
-                    }`}
-                  >
+                  <div className="h-24 w-full flex items-center justify-center relative z-10">
                     <div className="absolute inset-0 bg-primary-container/5 rounded-xl blur-lg pointer-events-none"></div>
                     <img
                       src={agg.product.imageUrl}
@@ -317,21 +307,15 @@ export const CatalogScreen: React.FC = () => {
                     {/* Stock Availability Footer */}
                     <div className="mt-2 pt-2 border-t border-[#1F1F1F] flex justify-between items-center text-[11px]">
                       <div className="flex items-center gap-1.5">
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            isAvailable ? 'bg-green-400 animate-pulse' : 'bg-slate-600'
-                          }`}
-                        ></span>
+                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
                         <span className="font-bold text-on-surface">
-                          {isAvailable ? `${agg.totalUnits} available` : 'None nearby'}
+                          {agg.totalUnits} available
                         </span>
                       </div>
 
-                      {isAvailable && (
-                        <span className="text-on-surface-variant font-medium">
-                          {agg.awakeRoomCount} {agg.awakeRoomCount === 1 ? 'room' : 'rooms'}
-                        </span>
-                      )}
+                      <span className="text-on-surface-variant font-medium">
+                        {agg.awakeRoomCount} {agg.awakeRoomCount === 1 ? 'room' : 'rooms'}
+                      </span>
                     </div>
                   </div>
                 </div>
