@@ -71,8 +71,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (swRegistration && 'showNotification' in swRegistration) {
           await swRegistration.showNotification('Notifications Enabled! 🔥', {
             body: 'You will now get instant sound & vibration alerts for incoming craving requests.',
-            icon: '/pwa-icon.svg',
-            badge: '/pwa-icon.svg',
+            icon: '/icons/logo-192.png',
+            badge: '/icons/logo-192.png',
             vibrate: [200, 100, 200],
             tag: 'rulesoff-welcome',
             data: { url: '/requests' },
@@ -96,8 +96,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (swRegistration && 'showNotification' in swRegistration) {
       await swRegistration.showNotification('Test Request Alert! 🔥', {
         body: 'Shivam Sharma (Room A304) wants 2x Maggi 2-Min Noodles from your room.',
-        icon: '/pwa-icon.svg',
-        badge: '/pwa-icon.svg',
+        icon: '/icons/logo-192.png',
+        badge: '/icons/logo-192.png',
         vibrate: [200, 100, 200],
         tag: 'test-request',
         data: { url: '/requests' },
@@ -105,7 +105,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } else if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Test Request Alert! 🔥', {
         body: 'Shivam Sharma (Room A304) wants 2x Maggi 2-Min Noodles from your room.',
-        icon: '/pwa-icon.svg',
+        icon: '/icons/logo-192.png',
       });
     }
   };
@@ -153,8 +153,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (swRegistration && 'showNotification' in swRegistration) {
           swRegistration.showNotification(title, {
             body,
-            icon: '/pwa-icon.svg',
-            badge: '/pwa-icon.svg',
+            icon: '/icons/logo-192.png',
+            badge: '/icons/logo-192.png',
             vibrate: [200, 100, 200],
             tag: `request-${newArrival.id}`,
             data: { url: '/requests' },
@@ -162,7 +162,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         } else if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(title, {
             body,
-            icon: '/pwa-icon.svg',
+            icon: '/icons/logo-192.png',
           });
         }
       }

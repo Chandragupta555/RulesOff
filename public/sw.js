@@ -40,8 +40,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'New Request! 🔥';
     const options = {
       body: data.body || 'You have a new snack request.',
-      icon: '/pwa-icon.svg',
-      badge: '/pwa-icon.svg',
+      icon: '/icons/logo-192.png',
+      badge: '/icons/logo-192.png',
       vibrate: [200, 100, 200],
       tag: data.tag || 'rulesoff-request',
       data: { url: data.url || '/requests' }
