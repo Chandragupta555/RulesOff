@@ -258,7 +258,8 @@ export const AdminScreen: React.FC = () => {
     setSelectedRequest(req);
     setApproveMode('new');
     setTargetExistingProductId(allProductsList[0]?.id || '');
-    setApproveCategory('Chips & Wafers');
+    const defaultCat = (categories[0]?.name || 'General') as ProductCategory;
+    setApproveCategory(defaultCat);
     setIsApproveNewSub(false);
     setApproveNewSubName('');
     setApproveSize(req.size || 'Standard');
@@ -266,7 +267,7 @@ export const AdminScreen: React.FC = () => {
     setApproveImageFile(null);
     setApproveImagePreview(null);
 
-    const firstCat = categories.find((c) => c.name === 'Chips & Wafers');
+    const firstCat = categories.find((c) => c.name === defaultCat);
     setApproveSubcategory(firstCat?.subcategories[0] || 'General');
   };
 

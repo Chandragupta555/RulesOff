@@ -9,7 +9,7 @@ import { RequestMethod } from '../types/request';
 import { createRequestDoc } from '../firebase/requests';
 import { FirestoreListing } from '../firebase/listings';
 import { HostelName } from '../types/user';
-import { subscribeToApprovedProducts } from '../firebase/productRequests';
+import { subscribeToMasterProducts } from '../firebase/masterCatalog';
 
 export const RequestConfirmationScreen: React.FC = () => {
   const { listingId } = useParams<{ listingId: string }>();
@@ -20,16 +20,16 @@ export const RequestConfirmationScreen: React.FC = () => {
   const methodParam = (searchParams.get('method') as RequestMethod) || 'pickup';
 
   const [listing, setListing] = useState<FirestoreListing | null>(null);
-  const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
+  const [masterProducts, setMasterProducts] = useState<Product[]>([]);
   const [loadingListing, setLoadingListing] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Subscribe to real-time approved catalog products for thumbnail matching
+  // Subscribe to real-time master catalog products for thumbnail matching
   useEffect(() => {
-    const unsub = subscribeToApprovedProducts((items) => {
-      setApprovedProducts(items);
+    const unsub = subscribeToMasterProducts((items) => {
+      setMasterProducts(items);
     });
     return () => unsub();
   }, []);
@@ -63,7 +63,7 @@ export const RequestConfirmationScreen: React.FC = () => {
     return <Navigate to="/setup" replace />;
   }
 
-  const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
+  const allProducts = masterProducts.length > 0 ? masterProducts : MOCK_PRODUCTS;
   const matchedProduct = listing?.productId
     ? allProducts.find((p) => p.id === listing.productId)
     : null;

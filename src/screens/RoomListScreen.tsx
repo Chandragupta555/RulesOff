@@ -5,7 +5,7 @@ import { Product, Listing } from '../types/catalog';
 import { MOCK_PRODUCTS, getProductById, getProximityLabel, sortListingsByProximity } from '../data/mockCatalog';
 import { BottomNavBar } from '../components/BottomNavBar';
 import { FirestoreListing, subscribeToHostelListings, adminDeleteListingDoc } from '../firebase/listings';
-import { subscribeToApprovedProducts } from '../firebase/productRequests';
+import { subscribeToMasterProducts } from '../firebase/masterCatalog';
 import { isAdminEmail } from '../config/admin';
 
 export const RoomListScreen: React.FC = () => {
@@ -15,17 +15,17 @@ export const RoomListScreen: React.FC = () => {
 
   const [deliveryFilter, setDeliveryFilter] = useState<'all' | 'delivery'>('all');
   const [hostelListings, setHostelListings] = useState<FirestoreListing[]>([]);
-  const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
+  const [masterProducts, setMasterProducts] = useState<Product[]>([]);
 
-  // Subscribe to real-time approved products
+  // Subscribe to real-time master products from Firestore
   useEffect(() => {
-    const unsub = subscribeToApprovedProducts((items) => {
-      setApprovedProducts(items);
+    const unsub = subscribeToMasterProducts((items) => {
+      setMasterProducts(items);
     });
     return () => unsub();
   }, []);
 
-  const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
+  const allProducts = masterProducts.length > 0 ? masterProducts : MOCK_PRODUCTS;
   const product = getProductById(productId || '', allProducts);
 
   const handleAdminDeleteListing = async (listingId?: string, name?: string) => {

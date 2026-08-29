@@ -13,7 +13,7 @@ import {
   cancelRequestDoc,
   fulfillRequestDoc
 } from '../firebase/requests';
-import { subscribeToApprovedProducts } from '../firebase/productRequests';
+import { subscribeToMasterProducts } from '../firebase/masterCatalog';
 
 export const RequestsScreen: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,14 +24,14 @@ export const RequestsScreen: React.FC = () => {
 
   const [incomingRequests, setIncomingRequests] = useState<FirestoreRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FirestoreRequest[]>([]);
-  const [approvedProducts, setApprovedProducts] = useState<Product[]>([]);
+  const [masterProducts, setMasterProducts] = useState<Product[]>([]);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
 
-  // Subscribe to real-time approved catalog items for thumbnail resolution
+  // Subscribe to real-time master catalog items for thumbnail resolution
   useEffect(() => {
-    const unsub = subscribeToApprovedProducts((items) => {
-      setApprovedProducts(items);
+    const unsub = subscribeToMasterProducts((items) => {
+      setMasterProducts(items);
     });
     return () => unsub();
   }, []);
@@ -67,7 +67,7 @@ export const RequestsScreen: React.FC = () => {
   }
 
   const userRoom = user.roomNumber;
-  const allProducts = [...MOCK_PRODUCTS, ...approvedProducts];
+  const allProducts = masterProducts.length > 0 ? masterProducts : MOCK_PRODUCTS;
 
   const handleTabChange = (tab: 'incoming' | 'outgoing') => {
     setActiveTab(tab);

@@ -403,11 +403,19 @@ export const ProfileScreen: React.FC = () => {
                     className="bg-[#181a1a] border border-[#2a2c2c] rounded-2xl p-3.5 flex justify-between items-center"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary-container/10 border border-primary-container/20 flex items-center justify-center text-primary-container">
-                        <span className="material-symbols-outlined text-xl">
-                          {item.isUnverified ? 'help_outline' : prod ? prod.iconName : 'local_mall'}
-                        </span>
-                      </div>
+                      {prod?.imageUrl ? (
+                        <img
+                          src={prod.imageUrl}
+                          alt={item.productName}
+                          className="w-10 h-10 object-contain rounded-xl bg-black/40 p-1 border border-[#333535] shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-primary-container/10 border border-primary-container/20 flex items-center justify-center text-primary-container shrink-0">
+                          <span className="material-symbols-outlined text-xl">
+                            {item.isUnverified ? 'help_outline' : prod ? prod.iconName : 'local_mall'}
+                          </span>
+                        </div>
+                      )}
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="text-sm font-extrabold text-white">

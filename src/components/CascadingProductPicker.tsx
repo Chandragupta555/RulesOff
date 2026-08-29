@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product, ProductCategory, ProductVariant } from '../types/catalog';
-import { PRODUCT_CATEGORIES } from '../data/mockCatalog';
+import { subscribeToMasterCategories, TaxonomyCategoryDoc } from '../firebase/masterCatalog';
 import { createProductRequestDoc } from '../firebase/productRequests';
 
 interface CascadingProductPickerProps {
@@ -18,6 +18,7 @@ interface CascadingProductPickerProps {
 
 const CATEGORY_ICONS: Record<string, string> = {
   'Chips & Wafers': 'lunch_dining',
+  'Chips, Munchies & Wafers': 'lunch_dining',
   'Namkeen & Bhujia': 'grain',
   'Instant Food': 'ramen_dining',
   'Biscuits & Cookies': 'cookie',
@@ -40,6 +41,7 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedProductObj, setSelectedProductObj] = useState<Product | null>(null);
+  const [taxonomyCategories, setTaxonomyCategories] = useState<TaxonomyCategoryDoc[]>([]);
 
   // Request New Product modal state
   const [isRequestingNew, setIsRequestingNew] = useState(false);
@@ -50,22 +52,34 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
   const [requestError, setRequestError] = useState('');
 
+  // Subscribe to real-time master categories & subcategories taxonomy from Firestore
+  useEffect(() => {
+    const unsub = subscribeToMasterCategories((items) => {
+      setTaxonomyCategories(items);
+    });
+    return () => unsub();
+  }, []);
+
   if (!isOpen) return null;
 
-  // Dynamic Categories from all products and base categories
-  const categoriesList = Array.from(
-    new Set([...PRODUCT_CATEGORIES, ...allProducts.map((p) => p.category).filter(Boolean)])
-  ) as ProductCategory[];
+  // Dynamic Categories from Firestore taxonomy collection (fallback to active products if empty)
+  const categoriesList =
+    taxonomyCategories.length > 0
+      ? (taxonomyCategories.map((c) => c.name) as ProductCategory[])
+      : (Array.from(new Set(allProducts.map((p) => p.category).filter(Boolean))) as ProductCategory[]);
 
   // Filter products by selected category
   const categoryProducts = selectedCategory
     ? allProducts.filter((p) => p.category === selectedCategory)
     : [];
 
-  // Extract unique subcategories for selected category
+  // Extract unique subcategories from taxonomy + active products for selected category
+  const matchedTaxDoc = taxonomyCategories.find((c) => c.name === selectedCategory);
+  const taxonomySubcats = matchedTaxDoc ? matchedTaxDoc.subcategories : [];
+  const productSubcats = categoryProducts.map((p) => p.subcategory || 'General');
   const availableSubcategories = Array.from(
-    new Set(categoryProducts.map((p) => p.subcategory || 'General'))
-  );
+    new Set([...taxonomySubcats, ...productSubcats])
+  ).filter(Boolean);
 
   // Filter products for step 3
   const finalProducts = categoryProducts.filter(
@@ -149,7 +163,7 @@ export const CascadingProductPicker: React.FC<CascadingProductPickerProps> = ({
       const syntheticProduct: Product = {
         id: requestId,
         name: nameClean,
-        category: selectedCategory || ('Chips & Wafers' as ProductCategory),
+        category: selectedCategory || (categoriesList[0] || ('General' as ProductCategory)),
         subcategory: selectedSubcategory || 'Custom Request',
         variants: [variant],
         mrp: newProductMrp,
