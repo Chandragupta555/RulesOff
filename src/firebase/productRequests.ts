@@ -134,6 +134,7 @@ export const subscribeToApprovedProducts = (
           variants,
           mrp: variants[0]?.mrp || 20,
           imageUrl:
+            data.imageUrl ||
             'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
           iconName: 'new_releases',
           description: `Approved catalog item under ${data.subcategory}`,
@@ -157,13 +158,17 @@ export const approveProductRequestDoc = async (
   category: ProductCategory,
   subcategory: string,
   size: string,
-  mrp: number
+  mrp: number,
+  imageUrl?: string
 ): Promise<string> => {
   const cleanName = productName.trim();
   const cleanSub = subcategory.trim();
   const cleanSize = (size || 'Standard').trim();
   const slugId = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const variant: ProductVariant = { size: cleanSize, mrp: Math.max(1, mrp) };
+  const finalImageUrl =
+    imageUrl ||
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
 
   // 1. Write to masterProducts collection
   const masterDocRef = doc(db, MASTER_PRODUCTS_COLLECTION, slugId);
@@ -172,8 +177,7 @@ export const approveProductRequestDoc = async (
     category,
     subcategory: cleanSub,
     variants: [variant],
-    imageUrl:
-      'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+    imageUrl: finalImageUrl,
     iconName: 'new_releases',
     description: `Approved product under ${cleanSub}`,
     isCustomApproved: true,
@@ -187,6 +191,7 @@ export const approveProductRequestDoc = async (
     category,
     subcategory: cleanSub,
     variants: [variant],
+    imageUrl: finalImageUrl,
     approvedAt: Date.now(),
     requestId,
   });
@@ -269,7 +274,8 @@ export const approveProductRequestAsVariantDoc = async (
   requestId: string,
   existingProductId: string,
   size: string,
-  mrp: number
+  mrp: number,
+  imageUrl?: string
 ): Promise<void> => {
   const cleanSize = (size || 'Standard').trim();
   const newVariant: ProductVariant = { size: cleanSize, mrp: Math.max(1, mrp) };
@@ -301,11 +307,16 @@ export const approveProductRequestAsVariantDoc = async (
     updatedVariants = [...currentVariants, newVariant];
   }
 
-  // Write updated variants to masterProducts
-  await updateDoc(masterDocRef, {
+  // Write updated variants (and optional imageUrl) to masterProducts
+  const updatePayload: any = {
     variants: updatedVariants,
     updatedAt: Date.now(),
-  });
+  };
+  if (imageUrl) {
+    updatePayload.imageUrl = imageUrl;
+  }
+
+  await updateDoc(masterDocRef, updatePayload);
 
   // 2. Mark request doc as approved
   const reqRef = doc(db, PRODUCT_REQUESTS_COLLECTION, requestId);

@@ -342,28 +342,47 @@ export const deleteSubcategoryDoc = async (
   await updateDoc(catRef, { subcategories: updatedSubs });
 };
 
-// ─── PRODUCT CRUD ──────────────────────────────────────────
+const APPROVED_PRODUCTS_COLLECTION = 'approvedProducts';
 
 export const createProductDocInMaster = async (
-  productData: Omit<Product, 'id'>
+  productData: Omit<Product, 'id' | 'imageUrl' | 'iconName'> & { imageUrl?: string; iconName?: string; description?: string }
 ): Promise<string> => {
   const cleanName = productData.name.trim();
   const slugId = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const prodRef = doc(db, MASTER_PRODUCTS_COLLECTION, slugId);
+  const variants = productData.variants || [{ size: 'Standard', mrp: productData.mrp || 20 }];
+  const imageUrl =
+    productData.imageUrl ||
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
 
   await setDoc(prodRef, {
     name: cleanName,
     category: productData.category,
     subcategory: productData.subcategory || 'General',
     mrp: Math.max(1, productData.mrp || 20),
-    variants: productData.variants || [{ size: 'Standard', mrp: productData.mrp || 20 }],
-    imageUrl:
-      productData.imageUrl ||
-      'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+    variants,
+    imageUrl,
     iconName: productData.iconName || 'shopping_bag',
     description: productData.description || '',
+    isCustomApproved: true,
     createdAt: Date.now(),
   });
+
+  // Also write directly to approvedProducts collection for full catalog sync
+  try {
+    const approvedColRef = collection(db, APPROVED_PRODUCTS_COLLECTION);
+    await addDoc(approvedColRef, {
+      name: cleanName,
+      category: productData.category,
+      subcategory: productData.subcategory || 'General',
+      variants,
+      imageUrl,
+      approvedAt: Date.now(),
+    });
+  } catch (err) {
+    console.error('[createProductDocInMaster] approvedProducts sync error:', err);
+  }
+
   return slugId;
 };
 
@@ -376,6 +395,28 @@ export const updateProductDocInMaster = async (
     ...updates,
     updatedAt: Date.now(),
   });
+
+  // Also update approvedProducts if matching document exists
+  try {
+    const appCol = collection(db, APPROVED_PRODUCTS_COLLECTION);
+    const q = query(appCol, where('name', '==', updates.name || productId));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const batch = writeBatch(db);
+      snap.docs.forEach((d) => {
+        const approvedUpdates: any = { updatedAt: Date.now() };
+        if (updates.name) approvedUpdates.name = updates.name;
+        if (updates.category) approvedUpdates.category = updates.category;
+        if (updates.subcategory) approvedUpdates.subcategory = updates.subcategory;
+        if (updates.imageUrl) approvedUpdates.imageUrl = updates.imageUrl;
+        if (updates.variants) approvedUpdates.variants = updates.variants;
+        batch.update(d.ref, approvedUpdates);
+      });
+      await batch.commit();
+    }
+  } catch (err) {
+    console.error('[updateProductDocInMaster] approvedProducts sync error:', err);
+  }
 };
 
 export const moveProductDocInMaster = async (

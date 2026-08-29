@@ -40,6 +40,7 @@ import {
   grantAdminAccess,
   revokeAdminAccess
 } from '../firebase/adminManagement';
+import { uploadProductImage } from '../lib/cloudinaryUpload';
 
 export const AdminScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -69,6 +70,23 @@ export const AdminScreen: React.FC = () => {
   const [approveNewSubName, setApproveNewSubName] = useState('');
   const [approveSize, setApproveSize] = useState<string>('Standard');
   const [approveMrp, setApproveMrp] = useState<number>(20);
+  const [approveImageFile, setApproveImageFile] = useState<File | null>(null);
+  const [approveImagePreview, setApproveImagePreview] = useState<string | null>(null);
+
+  // Edit Product Modal Image State
+  const [editProdImageFile, setEditProdImageFile] = useState<File | null>(null);
+  const [editProdImagePreview, setEditProdImagePreview] = useState<string | null>(null);
+
+  // Direct Product Creation Modal State (Bypasses Requests Queue)
+  const [isAddDirectModalOpen, setIsAddDirectModalOpen] = useState(false);
+  const [addDirectCatName, setAddDirectCatName] = useState<ProductCategory>('Chips & Wafers');
+  const [addDirectSubName, setAddDirectSubName] = useState('');
+  const [addDirectProdName, setAddDirectProdName] = useState('');
+  const [addDirectVariants, setAddDirectVariants] = useState<ProductVariant[]>([
+    { size: 'Standard', mrp: 20 },
+  ]);
+  const [addDirectImageFile, setAddDirectImageFile] = useState<File | null>(null);
+  const [addDirectImagePreview, setAddDirectImagePreview] = useState<string | null>(null);
 
   // Variant Management Modal State
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
@@ -245,6 +263,8 @@ export const AdminScreen: React.FC = () => {
     setApproveNewSubName('');
     setApproveSize(req.size || 'Standard');
     setApproveMrp(req.mrp || 20);
+    setApproveImageFile(null);
+    setApproveImagePreview(null);
 
     const firstCat = categories.find((c) => c.name === 'Chips & Wafers');
     setApproveSubcategory(firstCat?.subcategories[0] || 'General');
@@ -256,6 +276,11 @@ export const AdminScreen: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      let uploadedUrl: string | undefined = undefined;
+      if (approveImageFile) {
+        uploadedUrl = await uploadProductImage(approveImageFile, selectedRequest.productName);
+      }
+
       if (approveMode === 'new') {
         const subToSave = isApproveNewSub ? approveNewSubName.trim() : approveSubcategory.trim();
         if (!subToSave) {
@@ -268,7 +293,8 @@ export const AdminScreen: React.FC = () => {
           approveCategory,
           subToSave,
           approveSize,
-          approveMrp
+          approveMrp,
+          uploadedUrl
         );
         showFeedback(`Approved "${selectedRequest.productName}" (${approveSize}) into master catalog!`);
       } else {
@@ -280,11 +306,14 @@ export const AdminScreen: React.FC = () => {
           selectedRequest.id,
           targetExistingProductId,
           approveSize,
-          approveMrp
+          approveMrp,
+          uploadedUrl
         );
         showFeedback(`Added variant "${approveSize}" (MRP ₹${approveMrp}) to existing product!`);
       }
       setSelectedRequest(null);
+      setApproveImageFile(null);
+      setApproveImagePreview(null);
     } catch (err: any) {
       showFeedback(err.message || 'Failed to approve request.', true);
     } finally {
@@ -513,6 +542,86 @@ export const AdminScreen: React.FC = () => {
 
   // ─── PRODUCT HANDLERS ──────────────────────────────────────────
 
+  const handleOpenAddProductDirect = (cat: TaxonomyCategoryDoc, subName: string) => {
+    setAddDirectCatName(cat.name as ProductCategory);
+    setAddDirectSubName(subName);
+    setAddDirectProdName('');
+    setAddDirectVariants([{ size: 'Standard', mrp: 20 }]);
+    setAddDirectImageFile(null);
+    setAddDirectImagePreview(null);
+    setIsAddDirectModalOpen(true);
+  };
+
+  const handleAddDirectVariantInput = () => {
+    setAddDirectVariants((prev) => [...prev, { size: 'New Size', mrp: 20 }]);
+  };
+
+  const handleUpdateDirectVariantInput = (index: number, field: 'size' | 'mrp', val: string | number) => {
+    setAddDirectVariants((prev) =>
+      prev.map((v, i) => (i === index ? { ...v, [field]: val } : v))
+    );
+  };
+
+  const handleDeleteDirectVariantInput = (index: number) => {
+    if (addDirectVariants.length <= 1) {
+      showFeedback('A product must have at least one size variant.', true);
+      return;
+    }
+    setAddDirectVariants((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveDirectProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addDirectProdName.trim()) {
+      showFeedback('Please enter a product name.', true);
+      return;
+    }
+    for (const v of addDirectVariants) {
+      if (!v.size.trim()) {
+        showFeedback('Variant size label cannot be empty.', true);
+        return;
+      }
+      if (v.mrp < 1) {
+        showFeedback('Variant MRP must be at least ₹1.', true);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    try {
+      let uploadedUrl: string | undefined = undefined;
+      if (addDirectImageFile) {
+        uploadedUrl = await uploadProductImage(addDirectImageFile, addDirectProdName.trim());
+      }
+
+      const cleanVariants = addDirectVariants.map((v) => ({
+        size: v.size.trim(),
+        mrp: Number(v.mrp),
+      }));
+
+      await createProductDocInMaster({
+        name: addDirectProdName.trim(),
+        category: addDirectCatName,
+        subcategory: addDirectSubName.trim() || 'General',
+        variants: cleanVariants,
+        mrp: cleanVariants[0]?.mrp || 20,
+        imageUrl:
+          uploadedUrl ||
+          'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+        description: `Directly created catalog product under ${addDirectSubName}`,
+      });
+
+      showFeedback(`Successfully added "${addDirectProdName.trim()}" directly into catalog!`);
+      setIsAddDirectModalOpen(false);
+      setAddDirectImageFile(null);
+      setAddDirectImagePreview(null);
+    } catch (err: any) {
+      showFeedback(err.message || 'Failed to create product.', true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleOpenEditProduct = (prod: Product) => {
     setEditingProd(prod);
     setProdNameInput(prod.name);
@@ -520,6 +629,8 @@ export const AdminScreen: React.FC = () => {
     setProdDescInput(prod.description || '');
     setProdCatInput(prod.category);
     setProdSubInput(prod.subcategory || 'General');
+    setEditProdImageFile(null);
+    setEditProdImagePreview(prod.imageUrl || null);
     setIsProdModalOpen(true);
   };
 
@@ -534,15 +645,27 @@ export const AdminScreen: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await updateProductDocInMaster(editingProd.id, {
+      let uploadedUrl: string | undefined = undefined;
+      if (editProdImageFile) {
+        uploadedUrl = await uploadProductImage(editProdImageFile, editingProd.id);
+      }
+
+      const updates: Partial<Product> = {
         name: prodNameInput.trim(),
         mrp: prodMrpInput,
         description: prodDescInput.trim(),
         category: prodCatInput,
         subcategory: prodSubInput.trim(),
-      });
+      };
+      if (uploadedUrl) {
+        updates.imageUrl = uploadedUrl;
+      }
+
+      await updateProductDocInMaster(editingProd.id, updates);
       showFeedback(`Updated product "${prodNameInput.trim()}" successfully.`);
       setIsProdModalOpen(false);
+      setEditProdImageFile(null);
+      setEditProdImagePreview(null);
     } catch (err: any) {
       showFeedback(err.message || 'Failed to update product.', true);
     } finally {
@@ -836,6 +959,14 @@ export const AdminScreen: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenAddProductDirect(cat, subName)}
+                                    className="text-[10px] font-extrabold text-green-400 bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 px-2 py-0.5 rounded cursor-pointer transition-colors"
+                                    title="Directly create a product under this subcategory"
+                                  >
+                                    + Add Product
+                                  </button>
                                   <button
                                     type="button"
                                     onClick={() => handleOpenRenameSubcategory(cat, subName)}
@@ -1251,6 +1382,53 @@ export const AdminScreen: React.FC = () => {
                 />
               </div>
 
+              {/* Product Photo Upload */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  Product Image (Upload from device)
+                </label>
+                <div className="flex items-center gap-3 bg-[#1e2020] border border-[#333535] rounded-2xl p-3">
+                  <div className="w-14 h-14 rounded-xl bg-black/50 border border-[#333535] overflow-hidden flex items-center justify-center shrink-0">
+                    {approveImagePreview ? (
+                      <img src={approveImagePreview} alt="Preview" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="material-symbols-outlined text-2xl text-on-surface-variant">
+                        image
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label className="bg-[#2a2c2c] hover:bg-[#383a3a] text-white text-xs font-bold py-2 px-3 rounded-xl border border-[#444] cursor-pointer text-center transition-colors">
+                      {approveImagePreview ? '📷 Replace Photo' : '📁 Upload Photo from Device'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file) {
+                            setApproveImageFile(file);
+                            setApproveImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {approveImagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setApproveImageFile(null);
+                          setApproveImagePreview(null);
+                        }}
+                        className="text-[10px] text-red-400 hover:underline text-left cursor-pointer"
+                      >
+                        Remove selected photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-3 mt-2">
                 <button
                   type="button"
@@ -1599,6 +1777,53 @@ export const AdminScreen: React.FC = () => {
                 />
               </div>
 
+              {/* Product Photo Upload */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  Product Image (Upload from device)
+                </label>
+                <div className="flex items-center gap-3 bg-[#1e2020] border border-[#333535] rounded-2xl p-3">
+                  <div className="w-14 h-14 rounded-xl bg-black/50 border border-[#333535] overflow-hidden flex items-center justify-center shrink-0">
+                    {editProdImagePreview ? (
+                      <img src={editProdImagePreview} alt="Preview" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="material-symbols-outlined text-2xl text-on-surface-variant">
+                        image
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label className="bg-[#2a2c2c] hover:bg-[#383a3a] text-white text-xs font-bold py-2 px-3 rounded-xl border border-[#444] cursor-pointer text-center transition-colors">
+                      {editProdImagePreview ? '📷 Replace Photo' : '📁 Upload Photo from Device'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file) {
+                            setEditProdImageFile(file);
+                            setEditProdImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {editProdImagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditProdImageFile(null);
+                          setEditProdImagePreview(editingProd.imageUrl || null);
+                        }}
+                        className="text-[10px] text-red-400 hover:underline text-left cursor-pointer"
+                      >
+                        Reset photo to default
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex gap-3 mt-2">
                 <button
                   type="button"
@@ -1613,6 +1838,187 @@ export const AdminScreen: React.FC = () => {
                   className="flex-1 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-all cursor-pointer"
                 >
                   {isSubmitting ? 'Updating...' : 'Update Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DIRECT ADD PRODUCT MODAL (Bypasses Requests Queue) */}
+      {isAddDirectModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#121414] border border-primary-container/40 rounded-3xl p-6 w-full max-w-md flex flex-col gap-4 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-[#1F1F1F] pb-3">
+              <div>
+                <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">
+                  + Add Catalog Product
+                </h2>
+                <span className="text-xs font-semibold text-primary-container block mt-0.5">
+                  Direct Creation • Bypasses Requests Queue
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddDirectModalOpen(false)}
+                className="text-on-surface-variant hover:text-white w-8 h-8 rounded-full bg-[#1e2020] flex items-center justify-center cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Target Placement Badge */}
+            <div className="bg-[#1e2020] border border-[#333535] rounded-2xl p-3 flex flex-col gap-0.5">
+              <span className="text-[10px] text-on-surface-variant uppercase font-bold">
+                Target Taxonomy Placement:
+              </span>
+              <span className="text-xs font-bold text-white">
+                {addDirectCatName} <span className="text-primary-container">›</span> {addDirectSubName}
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveDirectProduct} className="flex flex-col gap-4">
+              {/* Product Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Doritos Nacho Cheese"
+                  value={addDirectProdName}
+                  onChange={(e) => setAddDirectProdName(e.target.value)}
+                  className="w-full bg-[#1e2020] border-2 border-primary-container/60 text-white font-bold rounded-2xl px-4 py-3.5 focus:outline-none focus:border-primary-container text-sm"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              {/* Pack Size Variants */}
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                    Pack Size Variants ({addDirectVariants.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddDirectVariantInput}
+                    className="text-[10px] font-extrabold text-primary-container bg-primary-container/10 border border-primary-container/30 px-2.5 py-1 rounded-full uppercase hover:bg-primary-container hover:text-black transition-colors cursor-pointer"
+                  >
+                    + Add Size Variant
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto pr-1">
+                  {addDirectVariants.map((v, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-[#1e2020] border border-[#333535] rounded-2xl p-3 flex items-center gap-2"
+                    >
+                      <div className="flex-1">
+                        <label className="text-[10px] text-on-surface-variant block font-bold">
+                          Size / Weight Label
+                        </label>
+                        <input
+                          type="text"
+                          value={v.size}
+                          onChange={(e) => handleUpdateDirectVariantInput(idx, 'size', e.target.value)}
+                          className="w-full bg-[#121414] border border-[#333535] rounded-xl px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-primary-container"
+                          placeholder="e.g. 82g"
+                        />
+                      </div>
+
+                      <div className="w-24">
+                        <label className="text-[10px] text-on-surface-variant block font-bold">
+                          MRP (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={v.mrp}
+                          onChange={(e) =>
+                            handleUpdateDirectVariantInput(idx, 'mrp', parseInt(e.target.value, 10) || 0)
+                          }
+                          className="w-full bg-[#121414] border border-[#333535] rounded-xl px-2.5 py-1.5 text-xs text-primary-container font-mono font-bold focus:outline-none focus:border-primary-container"
+                        />
+                      </div>
+
+                      {addDirectVariants.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDirectVariantInput(idx)}
+                          className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 flex items-center justify-center cursor-pointer shrink-0 mt-3"
+                          title="Remove variant"
+                        >
+                          <span className="material-symbols-outlined text-sm">delete</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Product Photo Upload */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-primary-container uppercase tracking-wider">
+                  Custom Product Photo (Optional)
+                </label>
+                <div className="flex items-center gap-3 bg-[#1e2020] border border-[#333535] rounded-2xl p-3">
+                  <div className="w-14 h-14 rounded-xl bg-black/50 border border-[#333535] overflow-hidden flex items-center justify-center shrink-0">
+                    {addDirectImagePreview ? (
+                      <img src={addDirectImagePreview} alt="Preview" className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="material-symbols-outlined text-2xl text-on-surface-variant">
+                        image
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <label className="bg-[#2a2c2c] hover:bg-[#383a3a] text-white text-xs font-bold py-2 px-3 rounded-xl border border-[#444] cursor-pointer text-center transition-colors">
+                      {addDirectImagePreview ? '📷 Replace Photo' : '📁 Upload Photo from Device'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          if (file) {
+                            setAddDirectImageFile(file);
+                            setAddDirectImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {addDirectImagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddDirectImageFile(null);
+                          setAddDirectImagePreview(null);
+                        }}
+                        className="text-[10px] text-red-400 hover:underline text-left cursor-pointer"
+                      >
+                        Remove selected photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddDirectModalOpen(false)}
+                  className="flex-1 py-3 rounded-full font-bold text-xs uppercase tracking-wider text-on-surface-variant bg-[#1e2020] hover:bg-[#282a2b] transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 rounded-full font-extrabold text-xs uppercase tracking-wider text-black bg-primary-container neon-glow active:scale-95 transition-all cursor-pointer"
+                >
+                  {isSubmitting ? 'Creating...' : '+ Create Product'}
                 </button>
               </div>
             </form>
